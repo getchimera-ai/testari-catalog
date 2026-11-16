@@ -1,0 +1,152 @@
+id: rust-security-audit
+name: Rust security audit
+version: 2
+owner: security
+domain: security
+tags: [rust, security, dependencies, memory-safety, injection, secrets, supply-chain, ffi, unsafe, concurrency, configuration]
+rationale: >-
+  Understand a Rust workspace the way an attacker does: map its trust boundaries and build
+  surface, triage dependency and advisory risk, trace untrusted input to dangerous sinks, audit
+  every unsafe block and FFI boundary, inspect configuration and secrets, and report only defects
+  with exact evidence.
+
+# MANDATORY IN EVERY WORKFLOW. AST units and language-server symbols are the substrate every
+# prompt receives as references; no prompt re-reads source that the context already holds.
+requires:
+  sources: [ast, lsp]
+
+# Two passes of the same discovery capability: Rust sources, and the configuration surface.
+# The id distinguishes the invocations; name is the engine capability.
+preprocessors:
+  - id: source-files
+    name: filtered_file_discovery
+    variables: { SOURCE_PATH: "{{roots}}", EXTENSIONS: ".rs" }
+  - id: configuration-files
+    name: filtered_file_discovery
+    variables: { SOURCE_PATH: "{{roots}}", EXTENSIONS: ".toml,.yaml,.yml,.json,.env,.sh,.sql", INCLUDE_NAMES: "Dockerfile,Makefile,.env" }
+  - id: project
+    name: project_context
+    variables: { MAX_BYTES: "524288" }
+
+# Resolved from software.yml at the repository root. The catalogue carries each
+# tool's recipe and its per-OS detection and install instructions, including the
+# Linux package managers (apt, dnf, yum, zypper, apk, pacman) and cargo/pipx.
+tools:
+  [cargo-metadata, cargo-check, cargo-clippy, cargo-audit, cargo-deny, cargo-geiger,
+   gitleaks, semgrep, cargo-expand, rust-detectors, rust-analyzer]
+
+inputs:
+  - { id: roots, kind: path, required: true }
+  - { id: focus, kind: symbol, required: false }
+  - { id: threat_model, kind: text, required: false }
+  - { id: exclude, kind: glob, required: false }
+
+# No prompt or instance caps: fan-out follows coverage. Resource protection is
+# the running engine's policy, and an early stop is reported as a coverage gap.
+
+steps:
+  - id: collect
+    kind: collect
+    depends_on: []
+    description: Run the declared tools and the read-only preprocessors; store facts.
+
+  - id: scope
+    kind: analyze
+    depends_on: [collect]
+    prompt: prompts/fixed/01-scope.md
+    context: [tool-facts, project_context]
+    produces: [scope]
+
+  - id: build-truth
+    kind: analyze
+    depends_on: [scope]
+    prompt: prompts/fixed/02-build-truth.md
+    context: [ast, lsp, tool-facts, project_context, scope]
+    produces: [build-truth]
+
+  - id: supply-chain
+    kind: analyze
+    depends_on: [build-truth]
+    prompt: prompts/fixed/03-supply-chain.md
+    context: [tool-facts, group-facts, project_context, scope, build-truth]
+    produces: [supply-chain]
+
+  - id: taint-plan
+    kind: analyze
+    depends_on: [build-truth, supply-chain]
+    prompt: prompts/fixed/04-taint-plan.md
+    context: [ast, lsp, tool-facts, project_context, scope, build-truth]
+    produces: [taint-plan]
+
+  - id: review-files
+    kind: analyze
+    depends_on: [build-truth, taint-plan]
+    template: prompts/templates/review-file.md
+    foreach: files.reviewable
+    group_by: crate
+    context: [ast, lsp, tool-facts, project_context, scope, taint-plan]
+    produces: [file-review]
+
+  - id: review-facts
+    kind: analyze
+    depends_on: [build-truth]
+    template: prompts/templates/review-facts.md
+    foreach: facts.groups
+    group_by: tool
+    context: [lsp, group-facts, related-units, project_context, build-truth]
+    produces: [fact-judgements]
+
+  - id: unsafe-audit
+    kind: analyze
+    depends_on: [build-truth]
+    template: prompts/templates/unsafe-cluster.md
+    foreach: units.unsafe
+    group_by: crate
+    context: [ast, lsp, related-units, project_context, build-truth]
+    produces: [unsafe-reviews]
+
+  - id: sink-review
+    kind: analyze
+    depends_on: [taint-plan, build-truth]
+    template: prompts/templates/sink-review.md
+    foreach: units.sinks
+    group_by: class
+    context: [ast, lsp, related-units, tool-facts, project_context, scope, taint-plan]
+    produces: [taint-reviews]
+
+  - id: config-secrets
+    kind: analyze
+    depends_on: [build-truth]
+    prompt: prompts/fixed/05-config-secrets.md
+    context: [tool-facts, project_context, build-truth]
+    produces: [config-review]
+
+  - id: crypto-auth
+    kind: analyze
+    depends_on: [build-truth, taint-plan]
+    prompt: prompts/fixed/07-crypto-auth.md
+    context: [ast, lsp, tool-facts, project_context, scope, taint-plan]
+    produces: [crypto-auth-review]
+
+  - id: consolidate
+    kind: consolidate
+    depends_on: [review-files, review-facts, unsafe-audit, sink-review, config-secrets, crypto-auth, supply-chain]
+    prompt: prompts/fixed/06-consolidate.md
+    context: [file-review, fact-judgements, unsafe-reviews, taint-reviews, config-review, crypto-auth-review, supply-chain, scope, run-coverage]
+    produces: [findings, coverage, gaps]
+
+  - id: verify
+    kind: verify
+    depends_on: [consolidate]
+    description: Check every finding's evidence span, quote and fingerprint; close gaps within bounds.
+
+evidence:
+  required: true
+  fields: [file, line, quote, fingerprint, rule]
+  missing: no_finding
+
+stop:
+  when_tool_missing: refuse
+  when_evidence_missing: no_finding
+
+outputs: [findings, coverage, sbom]

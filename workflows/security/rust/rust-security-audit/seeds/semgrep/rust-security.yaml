@@ -1,0 +1,109 @@
+# Deterministic rust security patterns.
+#
+# These are candidates, never conclusions: every match is confirmed or refuted
+# against reachability before it becomes a finding. Each rule names the class
+# of defect, so a match can be joined to the taint plan.
+rules:
+  - id: rust-shell-invocation
+    languages: [rust]
+    message: >-
+      A shell is invoked. If any argument is built from untrusted input this is
+      command injection; confirm the source of every argument.
+    severity: WARNING
+    metadata:
+      category: command-injection
+    patterns:
+      - pattern: std::process::Command::new($SHELL)
+      - metavariable-regex:
+          metavariable: $SHELL
+          regex: ^(sh|bash|zsh|dash|ksh|cmd|cmd\.exe|powershell|pwsh)$
+
+  - id: rust-shell-command-argument
+    languages: [rust]
+    message: >-
+      A command string is passed to a shell with `-c` or `/C`; trace the string
+      back to its source.
+    severity: WARNING
+    metadata:
+      category: command-injection
+    pattern-either:
+      - pattern: $CMD.arg("-c").arg($INPUT)
+      - pattern: $CMD.arg("/C").arg($INPUT)
+      - pattern: $CMD.arg("-Command").arg($INPUT)
+
+  - id: rust-sql-built-by-format
+    languages: [rust]
+    message: >-
+      SQL text is built with format!. If the interpolation is not a compile-time
+      literal, this is SQL injection instead of a bound parameter.
+    severity: ERROR
+    metadata:
+      category: sql-injection
+    pattern-either:
+      - pattern: sqlx::query(&format!(...))
+      - pattern: sqlx::query_as(&format!(...))
+      - pattern: $DB.execute(&format!(...), ...)
+      - pattern: $DB.execute_batch(&format!(...))
+      - pattern: $DB.prepare(&format!(...))
+      - pattern: diesel::sql_query(format!(...))
+
+  - id: rust-transmute
+    languages: [rust]
+    message: >-
+      transmute erases the compiler's type and layout checks; state the invariant
+      that makes the conversion sound.
+    severity: WARNING
+    metadata:
+      category: unsafe-soundness
+    pattern: std::mem::transmute::<$FROM, $TO>(...)
+
+  - id: rust-tls-verification-disabled
+    languages: [rust]
+    message: >-
+      Certificate or hostname verification is disabled; every connection made by
+      this client is interceptable.
+    severity: ERROR
+    metadata:
+      category: transport-security
+    pattern-either:
+      - pattern: $CLIENT.danger_accept_invalid_certs(true)
+      - pattern: $CLIENT.danger_accept_invalid_hostnames(true)
+      - pattern: $BUILDER.danger_accept_invalid_certs(true)
+
+  - id: rust-weak-hash
+    languages: [rust]
+    message: >-
+      MD5 or SHA-1 is constructed. Acceptable only for non-security checksums;
+      otherwise use SHA-256 or better, and a password hash for passwords.
+    severity: WARNING
+    metadata:
+      category: cryptography
+    pattern-either:
+      - pattern: md5::Md5::new()
+      - pattern: md5::compute(...)
+      - pattern: sha1::Sha1::new()
+      - pattern: Sha1::new()
+
+  - id: rust-environment-mutation
+    languages: [rust]
+    message: >-
+      std::env::set_var mutates process-wide state and is unsafe in a
+      multi-threaded program; confirm it runs before any thread exists.
+    severity: WARNING
+    metadata:
+      category: process-state
+    pattern: std::env::set_var(...)
+
+  - id: rust-libc-process-execution
+    languages: [rust]
+    message: >-
+      A libc process primitive is called directly; check that the argument is a
+      trusted, non-interpolated path.
+    severity: WARNING
+    metadata:
+      category: command-injection
+    pattern-either:
+      - pattern: libc::system(...)
+      - pattern: libc::execve(...)
+      - pattern: libc::execl(...)
+      - pattern: libc::execvp(...)
