@@ -75,3 +75,9 @@ from names: advisories, lints and sinks are judged by whether workspace code can
 them.
 
 Everything runs locally. No upload, no account, no telemetry.
+
+## Scope
+
+This audit inspects the workspace as it is today: the code that compiles and the configuration that
+ships. Repository history — secrets in past commits, force-pushes, unsigned or rewritten history —
+is out of scope here and is covered by a separate git security audit.
