@@ -47,6 +47,14 @@ Every finding carries:
 If a fact does not hold, emit a `refuted` judgement with the reason. If the file has no defects,
 emit `clean`. Never invent a file, line, quote or fact id.
 
+## Reporting a defect
+
+EVERY CONFIRMED DEFECT IS AN OBSERVATION, NOT ONLY AN ANSWER. Call `audit_report` once per
+defect with `observation` carrying the catalog rule, the category, the file, the exact span, the
+quoted source text, its `code_fingerprint`, the severity and the evidence steps — and then send
+this step's answer with `outcome: "done"`. The consolidation step merges observations into the
+finding ledger; a defect that exists only inside the answer never reaches a report.
+
 ## Delivering the answer
 
 Report this document as the step's answer: call `audit_report` with `outcome: "done"` and

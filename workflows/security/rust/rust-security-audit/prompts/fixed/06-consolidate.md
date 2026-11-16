@@ -30,6 +30,13 @@ not run tools; every claim must already exist in the inputs.
 - Say `clean` only when every declared input is accounted for and every coverage dimension is
   closed or explicitly listed as a gap.
 
+## What consolidation merges
+
+The finding ledger already holds every observation the earlier steps reported. Merge those
+observations with the tool facts, rank them, and explain each; do not re-derive a defect from a
+prose answer alone. A defect that was only described in a step answer, never reported as an
+observation, is not in the ledger and must be reported now or listed as a gap.
+
 ## Delivering the answer
 
 This step produces three answers. Call `audit_report` with `outcome: "done"` and one entry per

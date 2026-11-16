@@ -62,6 +62,10 @@ describe it.
   only counted;
 - an SBOM for the exact dependency graph that was audited.
 
+Every confirmed defect is reported as an observation while the review step runs; the step's answer
+is the index of what was reviewed and its verdicts. Consolidation merges the observations into the
+finding ledger, so nothing reaches a report by prose alone.
+
 ## Requirements
 
 - Rust and `cargo`;

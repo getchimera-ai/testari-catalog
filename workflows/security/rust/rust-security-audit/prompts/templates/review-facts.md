@@ -39,6 +39,14 @@ One judgement per fact or merged fact group:
 - A silent skip is not a refutation. If you cannot judge it, `needs-context` with the missing
   input named.
 
+## Reporting a defect
+
+EVERY CONFIRMED DEFECT IS AN OBSERVATION, NOT ONLY AN ANSWER. Call `audit_report` once per
+defect with `observation` carrying the catalog rule, the category, the file, the exact span, the
+quoted source text, its `code_fingerprint`, the severity and the evidence steps — and then send
+this step's answer with `outcome: "done"`. The consolidation step merges observations into the
+finding ledger; a defect that exists only inside the answer never reaches a report.
+
 ## Delivering the answer
 
 Report this document as the step's answer: call `audit_report` with `outcome: "done"` and
