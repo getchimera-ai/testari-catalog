@@ -3,8 +3,8 @@
 You are leading a Rust security audit. Before any file is reviewed, establish what this
 workspace exposes and who can reach it.
 
-You receive: project context (manifests, lockfile, CI configuration, README), the package, target
-and dependency facts from `cargo metadata`, and, when the person supplied one, a threat model.
+You receive: project context (manifests, lockfile, CI configuration, README), and the package,
+target and dependency facts from `cargo metadata`. Derive the threat model from that evidence.
 
 ## Your task
 

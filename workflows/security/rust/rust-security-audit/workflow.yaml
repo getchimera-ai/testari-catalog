@@ -48,11 +48,11 @@ tools:
   [cargo-metadata, cargo-check, cargo-clippy, cargo-audit, cargo-deny, cargo-geiger,
    gitleaks, semgrep, rust-detectors, rust-analyzer]
 
-inputs:
+# Only `roots` is reachable today: the engine accepts roots at start and
+# interpolates nothing else. A declared variable no path can supply would
+# advertise a capability the product does not have.
+variables:
   - { id: roots, kind: path, required: true }
-  - { id: focus, kind: symbol, required: false }
-  - { id: threat_model, kind: text, required: false }
-  - { id: exclude, kind: glob, required: false }
 
 # No prompt or instance caps: fan-out follows coverage. Resource protection is
 # the running engine's policy, and an early stop is reported as a coverage gap.
