@@ -20,10 +20,23 @@ requires:
 preprocessors:
   - id: source-files
     name: filtered_file_discovery
-    variables: { SOURCE_PATH: "{{roots}}", EXTENSIONS: ".rs" }
+    # Build output and vendored trees are not the workspace's source: scanning
+    # them wastes the walk bound and attributes generated code to the audit.
+    variables:
+      {
+        SOURCE_PATH: "{{roots}}",
+        EXTENSIONS: ".rs",
+        EXCLUDE_PATTERNS: "target,.git,node_modules,vendor,dist,build",
+      }
   - id: configuration-files
     name: filtered_file_discovery
-    variables: { SOURCE_PATH: "{{roots}}", EXTENSIONS: ".toml,.yaml,.yml,.json,.env,.sh,.sql", INCLUDE_NAMES: "Dockerfile,Makefile,.env" }
+    variables:
+      {
+        SOURCE_PATH: "{{roots}}",
+        EXTENSIONS: ".toml,.yaml,.yml,.json,.env,.sh,.sql",
+        INCLUDE_NAMES: "Dockerfile,Makefile,.env",
+        EXCLUDE_PATTERNS: "target,.git,node_modules,vendor,dist,build",
+      }
   - id: project
     name: project_context
     variables: { MAX_BYTES: "524288" }
