@@ -1,45 +1,53 @@
 id: rust-security-audit
 name: Rust security audit
-version: 1
+version: 2
 owner: security
 domain: security
-tags: [rust, security, dependencies, memory-safety, injection, secrets]
+tags: [rust, security, dependencies, memory-safety, injection, secrets, supply-chain, ffi, unsafe, concurrency, configuration]
 rationale: >-
-  Find real security defects in a Rust workspace by combining deterministic tool facts with
-  contextual agent analysis, and report only findings with exact evidence.
+  Understand a Rust workspace the way an attacker does: map its trust boundaries and build
+  surface, triage dependency and advisory risk, trace untrusted input to dangerous sinks, audit
+  every unsafe block and FFI boundary, inspect configuration and secrets, and report only defects
+  with exact evidence.
 
+# MANDATORY IN EVERY WORKFLOW. AST units and language-server symbols are the substrate every
+# prompt receives as references; no prompt re-reads source that the context already holds.
 requires:
   sources: [ast, lsp]
 
 preprocessors:
+  # Rust sources, including build scripts, examples, benches and tests.
   - name: filtered_file_discovery
     variables: { SOURCE_PATH: "{{roots}}", EXTENSIONS: ".rs" }
+  # The configuration surface: manifests, CI, container and environment files.
+  - name: filtered_file_discovery
+    variables: { SOURCE_PATH: "{{roots}}", EXTENSIONS: ".toml,.yaml,.yml,.json,.env,.sh,.sql", INCLUDE_NAMES: "Dockerfile,Makefile,.env" }
   - name: project_context
-    variables: { MAX_BYTES: "262144" }
+    variables: { MAX_BYTES: "524288" }
 
 tools:
   - id: cargo-metadata
     kind: external
-    purpose: Workspace packages, targets and dependency graph
+    purpose: Full workspace graph — packages, targets, features, dependencies, build scripts, proc macros
     platforms:
       macos: { detect: { executable: cargo }, install: { kind: homebrew, package: rust } }
       linux: { detect: { executable: cargo }, install: { kind: apt, package: cargo } }
       windows: { detect: { executable: cargo.exe }, install: { kind: winget, package: Rustlang.Rustup } }
     run:
-      argv: ["cargo", "metadata", "--format-version", "1", "--no-deps"]
-      timeout_seconds: 120
+      argv: ["cargo", "metadata", "--format-version", "1"]
+      timeout_seconds: 180
     parse: cargo-metadata-json
     facts: [package, dependency, target]
 
   - id: cargo-clippy
     kind: external
-    purpose: Lints, correctness and suspicious constructs
+    purpose: Lints, correctness, suspicious constructs and the security-relevant restriction lints
     platforms:
       macos: { detect: { executable: cargo }, install: { kind: homebrew, package: rust } }
       linux: { detect: { executable: cargo }, install: { kind: apt, package: cargo } }
       windows: { detect: { executable: cargo.exe }, install: { kind: winget, package: Rustlang.Rustup } }
     run:
-      argv: ["cargo", "clippy", "--workspace", "--all-targets", "--message-format=json"]
+      argv: ["cargo", "clippy", "--workspace", "--all-targets", "--all-features", "--message-format=json", "--", "-W", "clippy::unwrap_used", "-W", "clippy::expect_used", "-W", "clippy::panic", "-W", "clippy::mem_forget", "-W", "clippy::arithmetic_side_effects"]
       timeout_seconds: 900
     parse: clippy-json
     facts: [lint, correctness, suspicious]
@@ -72,6 +80,21 @@ tools:
     parse: cargo-deny-json
     facts: [licence, ban, source, advisory]
 
+  - id: cargo-geiger
+    kind: external
+    purpose: Unsafe-code metrics per crate and dependency, including unsafe in the dependency tree
+    verified: false
+    source: "https://github.com/rust-secure-code/cargo-geiger"
+    platforms:
+      macos: { detect: { executable: cargo-geiger } }
+      linux: { detect: { executable: cargo-geiger } }
+      windows: { detect: { executable: cargo-geiger.exe } }
+    run:
+      argv: ["cargo", "geiger", "--output-format", "Json"]
+      timeout_seconds: 600
+    parse: cargo-geiger-json
+    facts: [detector-candidate]
+
   - id: rust-detectors
     kind: builtin
     purpose: Testari tree-sitter detectors for unsafe blocks, SQL from input, weak crypto, secrets and command injection
@@ -79,7 +102,7 @@ tools:
 
   - id: rust-analyzer
     kind: lsp
-    purpose: Language-server symbols for every reviewed file
+    purpose: Language-server symbols and references for every reviewed file
     platforms:
       macos: { detect: { executable: rust-analyzer }, install: { kind: homebrew, package: rust-analyzer } }
       linux: { detect: { executable: rust-analyzer }, install: { kind: apt, package: rust-analyzer } }
@@ -88,6 +111,8 @@ tools:
 inputs:
   - { id: roots, kind: path, required: true }
   - { id: focus, kind: symbol, required: false }
+  - { id: threat_model, kind: text, required: false }
+  - { id: exclude, kind: glob, required: false }
 
 bounds:
   max_fixed_prompts: 20
@@ -100,35 +125,88 @@ steps:
     depends_on: []
     description: Run the declared tools and the read-only preprocessors; store facts.
 
-  - id: review-files
+  - id: scope
     kind: analyze
     depends_on: [collect]
+    prompt: prompts/fixed/01-scope.md
+    context: [tool-facts, project_context]
+    produces: [scope]
+
+  - id: build-truth
+    kind: analyze
+    depends_on: [scope]
+    prompt: prompts/fixed/02-build-truth.md
+    context: [ast, lsp, tool-facts, project_context, scope]
+    produces: [build-truth]
+
+  - id: supply-chain
+    kind: analyze
+    depends_on: [build-truth]
+    prompt: prompts/fixed/03-supply-chain.md
+    context: [tool-facts, group-facts, project_context, scope, build-truth]
+    produces: [supply-chain]
+
+  - id: taint-plan
+    kind: analyze
+    depends_on: [build-truth, supply-chain]
+    prompt: prompts/fixed/04-taint-plan.md
+    context: [ast, lsp, tool-facts, project_context, scope, build-truth]
+    produces: [taint-plan]
+
+  - id: review-files
+    kind: analyze
+    depends_on: [build-truth, taint-plan]
     template: prompts/templates/review-file.md
     foreach: files.reviewable
     max_instances: 100
-    context: [ast, lsp, tool-facts, project_context]
+    context: [ast, lsp, tool-facts, project_context, scope, taint-plan]
     produces: [file-review]
 
   - id: review-facts
     kind: analyze
-    depends_on: [collect]
+    depends_on: [build-truth]
     template: prompts/templates/review-facts.md
     foreach: facts.groups
     max_instances: 40
-    context: [lsp, group-facts, related-units, project_context]
+    context: [lsp, group-facts, related-units, project_context, build-truth]
     produces: [fact-judgements]
+
+  - id: unsafe-audit
+    kind: analyze
+    depends_on: [build-truth]
+    template: prompts/templates/unsafe-cluster.md
+    foreach: units.unsafe
+    max_instances: 40
+    context: [ast, lsp, related-units, project_context, build-truth]
+    produces: [unsafe-reviews]
+
+  - id: sink-review
+    kind: analyze
+    depends_on: [taint-plan, build-truth]
+    template: prompts/templates/sink-review.md
+    foreach: units.sinks
+    max_instances: 60
+    context: [ast, lsp, related-units, tool-facts, project_context, scope, taint-plan]
+    produces: [taint-reviews]
+
+  - id: config-secrets
+    kind: analyze
+    depends_on: [build-truth]
+    prompt: prompts/fixed/05-config-secrets.md
+    context: [tool-facts, project_context, build-truth]
+    produces: [config-review]
 
   - id: consolidate
     kind: consolidate
-    depends_on: [review-files, review-facts]
-    prompt: prompts/fixed/consolidate.md
-    context: [file-review, fact-judgements, run-coverage]
+    depends_on: [review-files, review-facts, unsafe-audit, sink-review, config-secrets, supply-chain]
+    prompt: prompts/fixed/06-consolidate.md
+    context: [file-review, fact-judgements, unsafe-reviews, taint-reviews, config-review, supply-chain, scope, run-coverage]
     produces: [findings, coverage, gaps]
 
   - id: verify
     kind: verify
     depends_on: [consolidate]
-    description: Check every finding's evidence span, quote and fingerprint; close gaps within bounds.
+    description: Check every finding's evidence span, quote and fingerprint; reproduce where a reproducer exists; close gaps within bounds.
 
 evidence:
   required: true
