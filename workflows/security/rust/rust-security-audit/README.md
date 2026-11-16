@@ -57,7 +57,9 @@ describe it.
 ## Outputs
 
 - findings with evidence and provenance;
-- coverage by file, fact, unsafe cluster, sink class, advisory, and crypto/authorization path;
+- coverage that names every planned review instance — each file, unsafe block, sink target and
+  crypto/authorization chapter — with its state, so an unreviewed item is visible rather than
+  only counted;
 - an SBOM for the exact dependency graph that was audited.
 
 ## Requirements
