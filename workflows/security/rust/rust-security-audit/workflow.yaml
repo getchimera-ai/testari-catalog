@@ -1,0 +1,143 @@
+id: rust-security-audit
+name: Rust security audit
+version: 1
+owner: security
+domain: security
+tags: [rust, security, dependencies, memory-safety, injection, secrets]
+rationale: >-
+  Find real security defects in a Rust workspace by combining deterministic tool facts with
+  contextual agent analysis, and report only findings with exact evidence.
+
+requires:
+  sources: [ast, lsp]
+
+preprocessors:
+  - name: filtered_file_discovery
+    variables: { SOURCE_PATH: "{{roots}}", EXTENSIONS: ".rs" }
+  - name: project_context
+    variables: { MAX_BYTES: "262144" }
+
+tools:
+  - id: cargo-metadata
+    kind: external
+    purpose: Workspace packages, targets and dependency graph
+    platforms:
+      macos: { detect: { executable: cargo }, install: { kind: homebrew, package: rust } }
+      linux: { detect: { executable: cargo }, install: { kind: apt, package: cargo } }
+      windows: { detect: { executable: cargo.exe }, install: { kind: winget, package: Rustlang.Rustup } }
+    run:
+      argv: ["cargo", "metadata", "--format-version", "1", "--no-deps"]
+      timeout_seconds: 120
+    parse: cargo-metadata-json
+    facts: [package, dependency, target]
+
+  - id: cargo-clippy
+    kind: external
+    purpose: Lints, correctness and suspicious constructs
+    platforms:
+      macos: { detect: { executable: cargo }, install: { kind: homebrew, package: rust } }
+      linux: { detect: { executable: cargo }, install: { kind: apt, package: cargo } }
+      windows: { detect: { executable: cargo.exe }, install: { kind: winget, package: Rustlang.Rustup } }
+    run:
+      argv: ["cargo", "clippy", "--workspace", "--all-targets", "--message-format=json"]
+      timeout_seconds: 900
+    parse: clippy-json
+    facts: [lint, correctness, suspicious]
+
+  - id: cargo-audit
+    kind: external
+    purpose: Known vulnerable dependencies from the advisory database
+    platforms:
+      macos: { detect: { executable: cargo-audit }, install: { kind: homebrew, package: cargo-audit } }
+      linux: { detect: { executable: cargo-audit }, install: { kind: apt, package: cargo-audit } }
+      windows: { detect: { executable: cargo-audit.exe }, install: { kind: winget, package: Rustlang.CargoAudit } }
+    run:
+      argv: ["cargo", "audit", "--json"]
+      timeout_seconds: 300
+    parse: cargo-audit-json
+    facts: [vulnerable-dependency, advisory]
+
+  - id: cargo-deny
+    kind: external
+    purpose: Licences, bans, sources and advisories for the dependency graph
+    platforms:
+      macos: { detect: { executable: cargo-deny }, install: { kind: homebrew, package: cargo-deny } }
+      linux: { detect: { executable: cargo-deny }, install: { kind: apt, package: cargo-deny } }
+      windows: { detect: { executable: cargo-deny.exe }, install: { kind: winget, package: EmbarkStudios.cargo-deny } }
+    run:
+      # cargo-deny 0.19.8 takes the output format as a global option before the
+      # subcommand; `cargo deny check --format json` is rejected.
+      argv: ["cargo", "deny", "--format", "json", "check"]
+      timeout_seconds: 300
+    parse: cargo-deny-json
+    facts: [licence, ban, source, advisory]
+
+  - id: rust-detectors
+    kind: builtin
+    purpose: Testari tree-sitter detectors for unsafe blocks, SQL from input, weak crypto, secrets and command injection
+    facts: [detector-candidate]
+
+  - id: rust-analyzer
+    kind: lsp
+    purpose: Language-server symbols for every reviewed file
+    platforms:
+      macos: { detect: { executable: rust-analyzer }, install: { kind: homebrew, package: rust-analyzer } }
+      linux: { detect: { executable: rust-analyzer }, install: { kind: apt, package: rust-analyzer } }
+      windows: { detect: { executable: rust-analyzer.exe }, install: { kind: winget, package: Rustlang.Rustup } }
+
+inputs:
+  - { id: roots, kind: path, required: true }
+  - { id: focus, kind: symbol, required: false }
+
+bounds:
+  max_fixed_prompts: 20
+  max_dynamic_prompts: 100
+  max_prompt_bytes: 16384
+
+steps:
+  - id: collect
+    kind: collect
+    depends_on: []
+    description: Run the declared tools and the read-only preprocessors; store facts.
+
+  - id: review-files
+    kind: analyze
+    depends_on: [collect]
+    template: prompts/templates/review-file.md
+    foreach: files.reviewable
+    max_instances: 100
+    context: [ast, lsp, tool-facts, project_context]
+    produces: [file-review]
+
+  - id: review-facts
+    kind: analyze
+    depends_on: [collect]
+    template: prompts/templates/review-facts.md
+    foreach: facts.groups
+    max_instances: 40
+    context: [lsp, group-facts, related-units, project_context]
+    produces: [fact-judgements]
+
+  - id: consolidate
+    kind: consolidate
+    depends_on: [review-files, review-facts]
+    prompt: prompts/fixed/consolidate.md
+    context: [file-review, fact-judgements, run-coverage]
+    produces: [findings, coverage, gaps]
+
+  - id: verify
+    kind: verify
+    depends_on: [consolidate]
+    description: Check every finding's evidence span, quote and fingerprint; close gaps within bounds.
+
+evidence:
+  required: true
+  fields: [file, line, quote, fingerprint, rule]
+  missing: no_finding
+
+stop:
+  max_gap_iterations: 3
+  when_tool_missing: refuse
+  when_evidence_missing: no_finding
+
+outputs: [findings, coverage]
