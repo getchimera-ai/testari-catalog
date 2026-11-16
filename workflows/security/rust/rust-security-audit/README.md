@@ -66,9 +66,12 @@ describe it.
   before the audit starts; the audit refuses to start when a declared tool is missing;
 - `cargo-geiger` is used when installed for unsafe metrics;
 - `cargo-expand` (nightly) is used when installed, so macro-generated code is analysed as real
-  syntax; otherwise that limitation is reported as a coverage gap, not silently ignored;
-- `cargo-miri` (nightly) is used when installed, so undefined behaviour in exercised unsafe code
-  becomes dynamic evidence; otherwise unsafe verdicts are reported as static-only.
+  syntax; otherwise that limitation is reported as a coverage gap, not silently ignored.
+
+Tool recipes and install instructions live in `software.yml` at the repository root, shared by
+every workflow. Installs cover Homebrew and WinGet, plus apt, dnf, yum, zypper, apk and pacman on
+Linux, and `cargo`/`pipx` for tools distributed that way. The audit never runs the workspace's
+tests; unsafe verdicts are static and say so.
 
 Reachability is established through rust-analyzer's call hierarchy and references, not by guessing
 from names: advisories, lints and sinks are judged by whether workspace code can actually reach

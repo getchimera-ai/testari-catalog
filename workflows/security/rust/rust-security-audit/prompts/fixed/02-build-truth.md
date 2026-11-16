@@ -24,9 +24,7 @@ messages from `cargo check`, project context, the scope model and, where the too
    and FFI `extern` block, with `file:line` and the crate. Group them into clusters: one cluster is
    a contiguous unsafe region with one invariant. Where macro-expanded code is provided as a
    source, include unsafe operations that only exist after expansion; say that they were expanded.
-   Where `miri` ran, its undefined-behaviour reports are dynamic evidence for the affected cluster;
-   where it did not run or the tests do not exercise the unsafe path, say so and treat those
-   verdicts as static-only.
+   The audit never executes the workspace's tests, so unsafe verdicts are static and must say so.
 6. **Profile flags.** Panic strategy, overflow checks, debug assertions, LTO, `RUSTFLAGS` and the
    pinned toolchain, as declared.
 

@@ -1,0 +1,222 @@
+# The shared deterministic tools. A workflow names them by id.
+#
+# install is a list because a fleet mixes package managers: Homebrew on macOS,
+# WinGet on Windows, and apt, dnf, yum, zypper, apk or pacman on Linux. A host
+# picks the instruction whose kind matches its package manager. A tool with no
+# instruction for a platform carries its source instead and is reported missing
+# until the person installs it.
+#
+# `{{seeds}}` in an argv is resolved by the engine to the absolute path of the
+# workflow's `seeds/` directory, so a tool can read rules shipped beside the
+# workflow without the recipe naming a machine-specific path.
+tools:
+  - id: cargo-metadata
+    kind: external
+    purpose: Workspace packages, targets, features and dependency graph
+    verified: true
+    platforms:
+      macos: { detect: { executable: cargo }, install: [{ kind: homebrew, package: rust }] }
+      linux:
+        detect: { executable: cargo }
+        install:
+          - { kind: apt, package: cargo }
+          - { kind: dnf, package: cargo }
+          - { kind: zypper, package: rust }
+          - { kind: apk, package: rust }
+          - { kind: pacman, package: rust }
+      windows: { detect: { executable: cargo.exe }, install: [{ kind: winget, package: Rustlang.Rustup }] }
+    run:
+      argv: ["cargo", "metadata", "--format-version", "1"]
+      timeout_seconds: 180
+    parse: cargo-metadata-json
+    facts: [package, dependency, target]
+
+  - id: cargo-check
+    kind: external
+    purpose: Compiler diagnostics for the real build, plus the cfg flags and environment each build script sets
+    verified: true
+    platforms:
+      macos: { detect: { executable: cargo }, install: [{ kind: homebrew, package: rust }] }
+      linux:
+        detect: { executable: cargo }
+        install:
+          - { kind: apt, package: cargo }
+          - { kind: dnf, package: cargo }
+          - { kind: zypper, package: rust }
+          - { kind: apk, package: rust }
+          - { kind: pacman, package: rust }
+      windows: { detect: { executable: cargo.exe }, install: [{ kind: winget, package: Rustlang.Rustup }] }
+    run:
+      argv: ["cargo", "check", "--workspace", "--all-targets", "--all-features", "--message-format=json"]
+      timeout_seconds: 900
+    parse: rustc-json
+    facts: [compiler-error, lint, correctness, suspicious]
+
+  - id: cargo-clippy
+    kind: external
+    purpose: Lints, correctness, suspicious constructs and the security-relevant restriction lints
+    verified: true
+    platforms:
+      macos: { detect: { executable: cargo }, install: [{ kind: homebrew, package: rust }] }
+      linux:
+        detect: { executable: cargo }
+        install:
+          - { kind: apt, package: cargo }
+          - { kind: dnf, package: cargo }
+          - { kind: zypper, package: rust }
+          - { kind: apk, package: rust }
+          - { kind: pacman, package: rust }
+      windows: { detect: { executable: cargo.exe }, install: [{ kind: winget, package: Rustlang.Rustup }] }
+    run:
+      argv: ["cargo", "clippy", "--workspace", "--all-targets", "--all-features", "--message-format=json", "--", "-W", "clippy::unwrap_used", "-W", "clippy::expect_used", "-W", "clippy::panic", "-W", "clippy::mem_forget", "-W", "clippy::arithmetic_side_effects", "-W", "clippy::undocumented_unsafe_blocks", "-W", "clippy::multiple_unsafe_ops_per_block", "-W", "clippy::indexing_slicing", "-W", "clippy::string_slice"]
+      timeout_seconds: 900
+    parse: clippy-json
+    facts: [lint, correctness, suspicious]
+
+  - id: cargo-audit
+    kind: external
+    purpose: Known vulnerable dependencies from the advisory database
+    verified: true
+    source: "https://github.com/rustsec/rustsec/tree/main/cargo-audit"
+    platforms:
+      macos: { detect: { executable: cargo-audit }, install: [{ kind: homebrew, package: cargo-audit }] }
+      linux:
+        detect: { executable: cargo-audit }
+        install:
+          - { kind: cargo, package: cargo-audit }
+          - { kind: apk, package: cargo-audit }
+      windows:
+        detect: { executable: cargo-audit.exe }
+        install: [{ kind: cargo, package: cargo-audit }]
+    run:
+      argv: ["cargo", "audit", "--json"]
+      timeout_seconds: 300
+    parse: cargo-audit-json
+    facts: [vulnerable-dependency, advisory]
+
+  - id: cargo-deny
+    kind: external
+    purpose: Licences, bans, sources and advisories for the dependency graph
+    verified: true
+    source: "https://github.com/EmbarkStudios/cargo-deny"
+    platforms:
+      macos: { detect: { executable: cargo-deny }, install: [{ kind: homebrew, package: cargo-deny }] }
+      linux:
+        detect: { executable: cargo-deny }
+        install:
+          - { kind: cargo, package: cargo-deny }
+          - { kind: apk, package: cargo-deny }
+      windows:
+        detect: { executable: cargo-deny.exe }
+        install: [{ kind: cargo, package: cargo-deny }]
+    run:
+      # cargo-deny 0.19.8 takes the output format as a global option before the
+      # subcommand; `cargo deny check --format json` is rejected.
+      argv: ["cargo", "deny", "--format", "json", "check"]
+      timeout_seconds: 300
+    parse: cargo-deny-json
+    facts: [licence, ban, source, advisory]
+
+  - id: cargo-geiger
+    kind: external
+    purpose: Unsafe-code metrics per crate and dependency, including unsafe in the dependency tree
+    verified: false
+    source: "https://github.com/rust-secure-code/cargo-geiger"
+    platforms:
+      macos:
+        detect: { executable: cargo-geiger }
+        install: [{ kind: cargo, package: cargo-geiger }]
+      linux:
+        detect: { executable: cargo-geiger }
+        install: [{ kind: cargo, package: cargo-geiger }]
+      windows:
+        detect: { executable: cargo-geiger.exe }
+        install: [{ kind: cargo, package: cargo-geiger }]
+    run:
+      argv: ["cargo", "geiger", "--output-format", "Json"]
+      timeout_seconds: 600
+    parse: cargo-geiger-json
+    facts: [detector-candidate]
+
+  - id: cargo-expand
+    kind: external
+    purpose: Macro-expanded source, so proc-macro and macro_rules code is analysed as real syntax instead of being invisible
+    verified: false
+    source: "https://github.com/dtolnay/cargo-expand"
+    platforms:
+      macos:
+        detect: { executable: cargo-expand }
+        install: [{ kind: cargo, package: cargo-expand }]
+      linux:
+        detect: { executable: cargo-expand }
+        install: [{ kind: cargo, package: cargo-expand }]
+      windows:
+        detect: { executable: cargo-expand.exe }
+        install: [{ kind: cargo, package: cargo-expand }]
+    run:
+      argv: ["cargo", "expand", "--workspace", "--all-features"]
+      timeout_seconds: 900
+    parse: expanded-source
+    facts: [detector-candidate]
+
+  - id: gitleaks
+    kind: external
+    purpose: Deterministic offline secret scan across sources, configuration and CI; runs with redaction so no secret value reaches a report
+    verified: true
+    source: "https://github.com/gitleaks/gitleaks"
+    platforms:
+      macos: { detect: { executable: gitleaks }, install: [{ kind: homebrew, package: gitleaks }] }
+      linux:
+        detect: { executable: gitleaks }
+        install:
+          - { kind: apt, package: gitleaks }
+          - { kind: dnf, package: gitleaks }
+          - { kind: apk, package: gitleaks }
+      windows:
+        detect: { executable: gitleaks.exe }
+        install: [{ kind: winget, package: Gitleaks.Gitleaks }]
+    run:
+      argv: ["gitleaks", "detect", "--no-git", "--redact", "--report-format", "json", "--report-path", "/dev/stdout"]
+      timeout_seconds: 300
+    parse: gitleaks-json
+    facts: [detector-candidate]
+
+  - id: semgrep
+    kind: external
+    purpose: Deterministic rule matching for the Rust anti-patterns seeded with the workflow
+    verified: true
+    source: "https://github.com/semgrep/semgrep"
+    platforms:
+      macos: { detect: { executable: semgrep }, install: [{ kind: homebrew, package: semgrep }] }
+      linux:
+        detect: { executable: semgrep }
+        install: [{ kind: pipx, package: semgrep }]
+      windows:
+        detect: { executable: semgrep.exe }
+        install: [{ kind: pipx, package: semgrep }]
+    run:
+      argv: ["semgrep", "--config", "{{seeds}}/semgrep/rust-security.yaml", "--json", "--metrics=off", "--quiet"]
+      timeout_seconds: 600
+    parse: semgrep-json
+    facts: [detector-candidate]
+
+  - id: rust-detectors
+    kind: builtin
+    purpose: Testari tree-sitter detectors for unsafe blocks, SQL from input, weak crypto, secrets and command injection
+    facts: [detector-candidate]
+
+  - id: rust-analyzer
+    kind: lsp
+    purpose: Symbols, incoming and outgoing call hierarchy, references and diagnostics — the reachability substrate every prompt receives
+    verified: true
+    source: "https://rust-analyzer.github.io/"
+    platforms:
+      macos: { detect: { executable: rust-analyzer }, install: [{ kind: homebrew, package: rust-analyzer }] }
+      linux:
+        detect: { executable: rust-analyzer }
+        install:
+          - { kind: dnf, package: rust-analyzer }
+          - { kind: zypper, package: rust-analyzer }
+          - { kind: apk, package: rust-analyzer }
+          - { kind: pacman, package: rust-analyzer }
+      windows: { detect: { executable: rust-analyzer.exe }, install: [{ kind: winget, package: Rustlang.Rustup }] }

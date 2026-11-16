@@ -15,167 +15,25 @@ rationale: >-
 requires:
   sources: [ast, lsp]
 
+# Two passes of the same discovery capability: Rust sources, and the configuration surface.
+# The id distinguishes the invocations; name is the engine capability.
 preprocessors:
-  # Rust sources, including build scripts, examples, benches and tests.
-  - name: filtered_file_discovery
+  - id: source-files
+    name: filtered_file_discovery
     variables: { SOURCE_PATH: "{{roots}}", EXTENSIONS: ".rs" }
-  # The configuration surface: manifests, CI, container and environment files.
-  - name: filtered_file_discovery
+  - id: configuration-files
+    name: filtered_file_discovery
     variables: { SOURCE_PATH: "{{roots}}", EXTENSIONS: ".toml,.yaml,.yml,.json,.env,.sh,.sql", INCLUDE_NAMES: "Dockerfile,Makefile,.env" }
-  - name: project_context
+  - id: project
+    name: project_context
     variables: { MAX_BYTES: "524288" }
 
+# Resolved from software.yml at the repository root. The catalogue carries each
+# tool's recipe and its per-OS detection and install instructions, including the
+# Linux package managers (apt, dnf, yum, zypper, apk, pacman) and cargo/pipx.
 tools:
-  - id: cargo-metadata
-    kind: external
-    purpose: Full workspace graph — packages, targets, features, dependencies, build scripts, proc macros
-    platforms:
-      macos: { detect: { executable: cargo }, install: { kind: homebrew, package: rust } }
-      linux: { detect: { executable: cargo }, install: { kind: apt, package: cargo } }
-      windows: { detect: { executable: cargo.exe }, install: { kind: winget, package: Rustlang.Rustup } }
-    run:
-      argv: ["cargo", "metadata", "--format-version", "1"]
-      timeout_seconds: 180
-    parse: cargo-metadata-json
-    facts: [package, dependency, target]
-
-  - id: cargo-check
-    kind: external
-    purpose: Compiler diagnostics for the real build, plus the cfg flags and environment each build script sets
-    platforms:
-      macos: { detect: { executable: cargo }, install: { kind: homebrew, package: rust } }
-      linux: { detect: { executable: cargo }, install: { kind: apt, package: cargo } }
-      windows: { detect: { executable: cargo.exe }, install: { kind: winget, package: Rustlang.Rustup } }
-    run:
-      argv: ["cargo", "check", "--workspace", "--all-targets", "--all-features", "--message-format=json"]
-      timeout_seconds: 900
-    parse: rustc-json
-    facts: [compiler-error, lint, correctness, suspicious]
-
-  - id: cargo-clippy
-    kind: external
-    purpose: Lints, correctness, suspicious constructs and the security-relevant restriction lints
-    platforms:
-      macos: { detect: { executable: cargo }, install: { kind: homebrew, package: rust } }
-      linux: { detect: { executable: cargo }, install: { kind: apt, package: cargo } }
-      windows: { detect: { executable: cargo.exe }, install: { kind: winget, package: Rustlang.Rustup } }
-    run:
-      argv: ["cargo", "clippy", "--workspace", "--all-targets", "--all-features", "--message-format=json", "--", "-W", "clippy::unwrap_used", "-W", "clippy::expect_used", "-W", "clippy::panic", "-W", "clippy::mem_forget", "-W", "clippy::arithmetic_side_effects", "-W", "clippy::undocumented_unsafe_blocks", "-W", "clippy::multiple_unsafe_ops_per_block", "-W", "clippy::indexing_slicing", "-W", "clippy::string_slice"]
-      timeout_seconds: 900
-    parse: clippy-json
-    facts: [lint, correctness, suspicious]
-
-  - id: cargo-audit
-    kind: external
-    purpose: Known vulnerable dependencies from the advisory database
-    platforms:
-      macos: { detect: { executable: cargo-audit }, install: { kind: homebrew, package: cargo-audit } }
-      linux: { detect: { executable: cargo-audit }, install: { kind: apt, package: cargo-audit } }
-      windows: { detect: { executable: cargo-audit.exe }, install: { kind: winget, package: Rustlang.CargoAudit } }
-    run:
-      argv: ["cargo", "audit", "--json"]
-      timeout_seconds: 300
-    parse: cargo-audit-json
-    facts: [vulnerable-dependency, advisory]
-
-  - id: cargo-deny
-    kind: external
-    purpose: Licences, bans, sources and advisories for the dependency graph
-    platforms:
-      macos: { detect: { executable: cargo-deny }, install: { kind: homebrew, package: cargo-deny } }
-      linux: { detect: { executable: cargo-deny }, install: { kind: apt, package: cargo-deny } }
-      windows: { detect: { executable: cargo-deny.exe }, install: { kind: winget, package: EmbarkStudios.cargo-deny } }
-    run:
-      # cargo-deny 0.19.8 takes the output format as a global option before the
-      # subcommand; `cargo deny check --format json` is rejected.
-      argv: ["cargo", "deny", "--format", "json", "check"]
-      timeout_seconds: 300
-    parse: cargo-deny-json
-    facts: [licence, ban, source, advisory]
-
-  - id: gitleaks
-    kind: external
-    purpose: Deterministic offline secret scan across sources, configuration and CI; runs with redaction so no secret value reaches a report
-    platforms:
-      macos: { detect: { executable: gitleaks }, install: { kind: homebrew, package: gitleaks } }
-      linux: { detect: { executable: gitleaks } }
-      windows: { detect: { executable: gitleaks.exe }, install: { kind: winget, package: Gitleaks.Gitleaks } }
-    run:
-      argv: ["gitleaks", "detect", "--no-git", "--redact", "--report-format", "json", "--report-path", "/dev/stdout"]
-      timeout_seconds: 300
-    parse: gitleaks-json
-    facts: [detector-candidate]
-
-  - id: cargo-geiger
-    kind: external
-    purpose: Unsafe-code metrics per crate and dependency, including unsafe in the dependency tree
-    verified: false
-    source: "https://github.com/rust-secure-code/cargo-geiger"
-    platforms:
-      macos: { detect: { executable: cargo-geiger } }
-      linux: { detect: { executable: cargo-geiger } }
-      windows: { detect: { executable: cargo-geiger.exe } }
-    run:
-      argv: ["cargo", "geiger", "--output-format", "Json"]
-      timeout_seconds: 600
-    parse: cargo-geiger-json
-    facts: [detector-candidate]
-
-  - id: rust-detectors
-    kind: builtin
-    purpose: Testari tree-sitter detectors for unsafe blocks, SQL from input, weak crypto, secrets and command injection
-    facts: [detector-candidate]
-
-  - id: rust-analyzer
-    kind: lsp
-    purpose: Symbols, incoming and outgoing call hierarchy, references and diagnostics — the reachability substrate every prompt receives
-    platforms:
-      macos: { detect: { executable: rust-analyzer }, install: { kind: homebrew, package: rust-analyzer } }
-      linux: { detect: { executable: rust-analyzer }, install: { kind: apt, package: rust-analyzer } }
-      windows: { detect: { executable: rust-analyzer.exe }, install: { kind: winget, package: Rustlang.Rustup } }
-
-  - id: semgrep
-    kind: external
-    purpose: Deterministic rule matching for the Rust anti-patterns seeded with this workflow — shell invocation, string-built SQL, transmute, disabled TLS verification, weak hashing, environment mutation
-    platforms:
-      macos: { detect: { executable: semgrep }, install: { kind: homebrew, package: semgrep } }
-      linux: { detect: { executable: semgrep } }
-      windows: { detect: { executable: semgrep.exe } }
-    run:
-      argv: ["semgrep", "--config", "seeds/semgrep/rust-security.yaml", "--json", "--metrics=off", "--quiet"]
-      timeout_seconds: 600
-    parse: semgrep-json
-    facts: [detector-candidate]
-
-  - id: cargo-expand
-    kind: external
-    purpose: Macro-expanded source, so proc-macro and macro_rules code is analysed as real syntax instead of being invisible
-    verified: false
-    source: "https://github.com/dtolnay/cargo-expand"
-    platforms:
-      macos: { detect: { executable: cargo-expand } }
-      linux: { detect: { executable: cargo-expand } }
-      windows: { detect: { executable: cargo-expand.exe } }
-    run:
-      argv: ["cargo", "expand", "--workspace", "--all-features"]
-      timeout_seconds: 900
-    parse: expanded-source
-    facts: [detector-candidate]
-
-  - id: miri
-    kind: external
-    purpose: Dynamic undefined-behaviour evidence for the unsafe code the workspace's tests actually exercise
-    verified: false
-    source: "https://github.com/rust-lang/miri"
-    platforms:
-      macos: { detect: { executable: cargo-miri } }
-      linux: { detect: { executable: cargo-miri } }
-      windows: { detect: { executable: cargo-miri.exe } }
-    run:
-      argv: ["cargo", "miri", "test", "--workspace", "--all-features"]
-      timeout_seconds: 1800
-    parse: miri-output
-    facts: [detector-candidate]
+  [cargo-metadata, cargo-check, cargo-clippy, cargo-audit, cargo-deny, cargo-geiger,
+   gitleaks, semgrep, cargo-expand, rust-detectors, rust-analyzer]
 
 inputs:
   - { id: roots, kind: path, required: true }
@@ -282,7 +140,7 @@ steps:
   - id: verify
     kind: verify
     depends_on: [consolidate]
-    description: Check every finding's evidence span, quote and fingerprint; reproduce where a reproducer exists; close gaps within bounds.
+    description: Check every finding's evidence span, quote and fingerprint; close gaps within bounds.
 
 evidence:
   required: true
