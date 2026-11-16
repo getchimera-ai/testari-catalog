@@ -154,27 +154,6 @@ tools:
     parse: cargo-geiger-json
     facts: [detector-candidate]
 
-  - id: cargo-expand
-    kind: external
-    purpose: Macro-expanded source, so proc-macro and macro_rules code is analysed as real syntax instead of being invisible
-    verified: false
-    source: "https://github.com/dtolnay/cargo-expand"
-    platforms:
-      macos:
-        detect: { executable: cargo-expand }
-        install: [{ kind: cargo, package: cargo-expand }]
-      linux:
-        detect: { executable: cargo-expand }
-        install: [{ kind: cargo, package: cargo-expand }]
-      windows:
-        detect: { executable: cargo-expand.exe }
-        install: [{ kind: cargo, package: cargo-expand }]
-    run:
-      argv: ["cargo", "expand", "--workspace", "--all-features"]
-      timeout_seconds: 900
-    parse: expanded-source
-    facts: [detector-candidate]
-
   - id: gitleaks
     kind: external
     purpose: Deterministic offline secret scan across sources, configuration and CI; runs with redaction so no secret value reaches a report

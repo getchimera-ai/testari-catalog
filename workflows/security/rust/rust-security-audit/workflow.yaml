@@ -33,7 +33,7 @@ preprocessors:
 # Linux package managers (apt, dnf, yum, zypper, apk, pacman) and cargo/pipx.
 tools:
   [cargo-metadata, cargo-check, cargo-clippy, cargo-audit, cargo-deny, cargo-geiger,
-   gitleaks, semgrep, cargo-expand, rust-detectors, rust-analyzer]
+   gitleaks, semgrep, rust-detectors, rust-analyzer]
 
 inputs:
   - { id: roots, kind: path, required: true }
