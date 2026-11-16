@@ -17,10 +17,19 @@ For this file only:
    plan, trace the data through it: where it enters, what validation or escaping stands between
    source and sink, and whether an attacker at a scope boundary can reach the sink. Use the LSP
    references to name callers and callees outside this file.
-3. **Contextual defects tools cannot see.** Injection reachable from public input, secrets in code
-   or error messages, authorization gaps, unsafe invariants this file relies on, panics or
-   unbounded allocation on untrusted input, blocking work inside async code, logging of
-   sensitive values.
+3. **Contextual defects tools cannot see.**
+   - injection reachable from public input, and secrets in code or error messages;
+   - authorization gaps, including queries filtered by a caller-supplied id but not by the
+     caller's tenant or identity;
+   - unsafe invariants this file relies on, and unsafe operations that appear only after macro
+     expansion when expanded units are provided;
+   - denial of service: allocation, recursion, decompression, regex or loop bounds taken from
+     untrusted input;
+   - concurrency: lock ordering and poison handling, blocking work inside async code, cancellation
+     safety at `select!`/`await` points, unbounded channels, tasks spawned without supervision;
+   - cryptography: equality comparison of secrets, non-CSPRNG token generation, weak digests used
+     for security, static IVs or nonces;
+   - panics and error messages on untrusted input, and logging of sensitive values.
 4. **One finding per real defect.** No duplicate findings for one defect confirmed by several tools;
    merge them and cite every fact id.
 

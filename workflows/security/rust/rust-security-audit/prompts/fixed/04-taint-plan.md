@@ -19,7 +19,11 @@ Build the taint plan from the code, not from a checklist.
    - network clients (server-side request forgery, redirects, TLS verification disabled);
    - unsafe pointer operations and `extern` calls;
    - URL and template construction, HTML/XML output, log and audit-trail writes;
-   - authorization decisions and privilege checks.
+   - authorization decisions and privilege checks;
+   - parsers and deserializers: allocation sized by input, recursion depth, decompression,
+     regex evaluation, and any loop whose bound comes from the data;
+   - cryptographic operations where the input class matters (secret comparison, token generation,
+     key derivation).
 3. **Transforms.** The validators, allowlists, parsers, escaping, parameter binding and privilege
    checks that a safe path depends on. Name the function that must be called.
 4. **Classes worth tracing.** For each source→sink pair reachable in this workspace: the class

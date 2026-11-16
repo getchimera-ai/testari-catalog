@@ -34,7 +34,11 @@ configuration lets through. It reports only defects with exact evidence.
    custom formats it cannot see; secrets in any file are reported redacted, never reproduced. CI
    injection and token exposure, container and deployment hardening, cargo profiles and build
    flags, TLS and network defaults.
-10. **Consolidation and verification** — duplicates merged by fingerprint, provenance kept, findings
+10. **Cryptography and authorization** — algorithm and randomness misuse, constant-time secret
+    comparison, password storage, key handling, token verification (algorithm pinning, issuer,
+    audience, expiry), session handling, and every privileged operation checked against a
+    server-side identity rather than a caller-supplied id.
+11. **Consolidation and verification** — duplicates merged by fingerprint, provenance kept, findings
     ranked by impact and reachability, coverage reported by crate, target, feature set, unsafe
     cluster and sink class, gaps closed within the declared bound.
 
@@ -49,12 +53,22 @@ A tool fact is not a finding until it is confirmed against the code. A refuted f
 audit trail with its reason. One defect stays one finding even when several tools or reviews
 describe it.
 
+## Outputs
+
+- findings with evidence and provenance;
+- coverage by file, fact, unsafe cluster, sink class, advisory, and crypto/authorization path;
+- an SBOM for the exact dependency graph that was audited.
+
 ## Requirements
 
 - Rust and `cargo`;
-- `cargo-audit`, `cargo-deny`, `gitleaks` and `rust-analyzer` are required and detected before the
-  audit starts; the audit refuses to start when a declared tool is missing;
-- `cargo-geiger` is used when installed for unsafe metrics and reported as unavailable otherwise.
+- `cargo-audit`, `cargo-deny`, `gitleaks`, `semgrep` and `rust-analyzer` are required and detected
+  before the audit starts; the audit refuses to start when a declared tool is missing;
+- `cargo-geiger` is used when installed for unsafe metrics;
+- `cargo-expand` (nightly) is used when installed, so macro-generated code is analysed as real
+  syntax; otherwise that limitation is reported as a coverage gap, not silently ignored;
+- `cargo-miri` (nightly) is used when installed, so undefined behaviour in exercised unsafe code
+  becomes dynamic evidence; otherwise unsafe verdicts are reported as static-only.
 
 Reachability is established through rust-analyzer's call hierarchy and references, not by guessing
 from names: advisories, lints and sinks are judged by whether workspace code can actually reach

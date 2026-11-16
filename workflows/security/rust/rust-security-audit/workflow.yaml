@@ -60,7 +60,7 @@ tools:
       linux: { detect: { executable: cargo }, install: { kind: apt, package: cargo } }
       windows: { detect: { executable: cargo.exe }, install: { kind: winget, package: Rustlang.Rustup } }
     run:
-      argv: ["cargo", "clippy", "--workspace", "--all-targets", "--all-features", "--message-format=json", "--", "-W", "clippy::unwrap_used", "-W", "clippy::expect_used", "-W", "clippy::panic", "-W", "clippy::mem_forget", "-W", "clippy::arithmetic_side_effects"]
+      argv: ["cargo", "clippy", "--workspace", "--all-targets", "--all-features", "--message-format=json", "--", "-W", "clippy::unwrap_used", "-W", "clippy::expect_used", "-W", "clippy::panic", "-W", "clippy::mem_forget", "-W", "clippy::arithmetic_side_effects", "-W", "clippy::undocumented_unsafe_blocks", "-W", "clippy::multiple_unsafe_ops_per_block", "-W", "clippy::indexing_slicing", "-W", "clippy::string_slice"]
       timeout_seconds: 900
     parse: clippy-json
     facts: [lint, correctness, suspicious]
@@ -133,6 +133,49 @@ tools:
       macos: { detect: { executable: rust-analyzer }, install: { kind: homebrew, package: rust-analyzer } }
       linux: { detect: { executable: rust-analyzer }, install: { kind: apt, package: rust-analyzer } }
       windows: { detect: { executable: rust-analyzer.exe }, install: { kind: winget, package: Rustlang.Rustup } }
+
+  - id: semgrep
+    kind: external
+    purpose: Deterministic rule matching for the Rust anti-patterns seeded with this workflow — shell invocation, string-built SQL, transmute, disabled TLS verification, weak hashing, environment mutation
+    platforms:
+      macos: { detect: { executable: semgrep }, install: { kind: homebrew, package: semgrep } }
+      linux: { detect: { executable: semgrep } }
+      windows: { detect: { executable: semgrep.exe } }
+    run:
+      argv: ["semgrep", "--config", "seeds/semgrep/rust-security.yaml", "--json", "--metrics=off", "--quiet"]
+      timeout_seconds: 600
+    parse: semgrep-json
+    facts: [detector-candidate]
+
+  - id: cargo-expand
+    kind: external
+    purpose: Macro-expanded source, so proc-macro and macro_rules code is analysed as real syntax instead of being invisible
+    verified: false
+    source: "https://github.com/dtolnay/cargo-expand"
+    platforms:
+      macos: { detect: { executable: cargo-expand } }
+      linux: { detect: { executable: cargo-expand } }
+      windows: { detect: { executable: cargo-expand.exe } }
+    run:
+      argv: ["cargo", "expand", "--workspace", "--all-features"]
+      timeout_seconds: 900
+    parse: expanded-source
+    facts: [detector-candidate]
+
+  - id: miri
+    kind: external
+    purpose: Dynamic undefined-behaviour evidence for the unsafe code the workspace's tests actually exercise
+    verified: false
+    source: "https://github.com/rust-lang/miri"
+    platforms:
+      macos: { detect: { executable: cargo-miri } }
+      linux: { detect: { executable: cargo-miri } }
+      windows: { detect: { executable: cargo-miri.exe } }
+    run:
+      argv: ["cargo", "miri", "test", "--workspace", "--all-features"]
+      timeout_seconds: 1800
+    parse: miri-output
+    facts: [detector-candidate]
 
 inputs:
   - { id: roots, kind: path, required: true }
@@ -222,11 +265,18 @@ steps:
     context: [tool-facts, project_context, build-truth]
     produces: [config-review]
 
+  - id: crypto-auth
+    kind: analyze
+    depends_on: [build-truth, taint-plan]
+    prompt: prompts/fixed/07-crypto-auth.md
+    context: [ast, lsp, tool-facts, project_context, scope, taint-plan]
+    produces: [crypto-auth-review]
+
   - id: consolidate
     kind: consolidate
-    depends_on: [review-files, review-facts, unsafe-audit, sink-review, config-secrets, supply-chain]
+    depends_on: [review-files, review-facts, unsafe-audit, sink-review, config-secrets, crypto-auth, supply-chain]
     prompt: prompts/fixed/06-consolidate.md
-    context: [file-review, fact-judgements, unsafe-reviews, taint-reviews, config-review, supply-chain, scope, run-coverage]
+    context: [file-review, fact-judgements, unsafe-reviews, taint-reviews, config-review, crypto-auth-review, supply-chain, scope, run-coverage]
     produces: [findings, coverage, gaps]
 
   - id: verify
@@ -244,4 +294,4 @@ stop:
   when_tool_missing: refuse
   when_evidence_missing: no_finding
 
-outputs: [findings, coverage]
+outputs: [findings, coverage, sbom]

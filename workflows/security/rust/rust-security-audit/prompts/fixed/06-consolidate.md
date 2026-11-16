@@ -2,7 +2,8 @@
 
 You are consolidating a finished Rust security audit. You receive the scope model, build truth,
 supply-chain review, taint plan, per-file reviews, fact judgements, unsafe-cluster reviews,
-sink reviews, configuration review and the current coverage view. Do not read the repository and do
+sink reviews, configuration review, cryptography and authorization review, and the current
+coverage view. Do not read the repository and do
 not run tools; every claim must already exist in the inputs.
 
 ## Your task
@@ -15,8 +16,9 @@ not run tools; every claim must already exist in the inputs.
 3. **Rank.** Severity from impact and reachability in this workspace, not from the tool label.
    State confidence honestly; a reachable-unproven advisory is not an exploitable one.
 4. **Coverage.** Files reviewed, facts confirmed/refuted/needs-context, unsafe clusters audited,
-   sink classes traced, advisories judged — and what remains uncovered, by crate, target and
-   feature set.
+   sink classes traced, advisories judged, crypto and authorization paths checked — and what
+   remains uncovered, by crate, target and feature set. State whether macro-expanded code and
+   dynamic UB evidence were available; their absence is a gap, not a clean result.
 5. **Gaps.** Files, fact groups, unsafe clusters, sink instances or advisories that were not
    reviewed, or `needs-context` judgements without a follow-up.
 
