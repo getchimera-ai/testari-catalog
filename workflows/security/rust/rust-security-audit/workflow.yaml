@@ -41,10 +41,8 @@ inputs:
   - { id: threat_model, kind: text, required: false }
   - { id: exclude, kind: glob, required: false }
 
-bounds:
-  max_fixed_prompts: 20
-  max_dynamic_prompts: 100
-  max_prompt_bytes: 16384
+# No prompt or instance caps: fan-out follows coverage. Resource protection is
+# the running engine's policy, and an early stop is reported as a coverage gap.
 
 steps:
   - id: collect
@@ -85,7 +83,6 @@ steps:
     depends_on: [build-truth, taint-plan]
     template: prompts/templates/review-file.md
     foreach: files.reviewable
-    max_instances: 100
     context: [ast, lsp, tool-facts, project_context, scope, taint-plan]
     produces: [file-review]
 
@@ -94,7 +91,6 @@ steps:
     depends_on: [build-truth]
     template: prompts/templates/review-facts.md
     foreach: facts.groups
-    max_instances: 40
     context: [lsp, group-facts, related-units, project_context, build-truth]
     produces: [fact-judgements]
 
@@ -103,7 +99,6 @@ steps:
     depends_on: [build-truth]
     template: prompts/templates/unsafe-cluster.md
     foreach: units.unsafe
-    max_instances: 40
     context: [ast, lsp, related-units, project_context, build-truth]
     produces: [unsafe-reviews]
 
@@ -112,7 +107,6 @@ steps:
     depends_on: [taint-plan, build-truth]
     template: prompts/templates/sink-review.md
     foreach: units.sinks
-    max_instances: 60
     context: [ast, lsp, related-units, tool-facts, project_context, scope, taint-plan]
     produces: [taint-reviews]
 
@@ -148,7 +142,6 @@ evidence:
   missing: no_finding
 
 stop:
-  max_gap_iterations: 3
   when_tool_missing: refuse
   when_evidence_missing: no_finding
 
