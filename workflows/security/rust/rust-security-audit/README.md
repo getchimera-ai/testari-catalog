@@ -78,7 +78,7 @@ every workflow. Installs cover Homebrew and WinGet, plus apt, dnf, yum, zypper, 
 Linux, and `cargo`/`pipx` for tools distributed that way. The audit never runs the workspace's
 tests; unsafe verdicts are static and say so.
 
-Reachability is established through rust-analyzer's call hierarchy and references, not by guessing
+Reachability is established through the references rust-analyzer resolved, not by guessing
 from names: advisories, lints and sinks are judged by whether workspace code can actually reach
 them.
 
