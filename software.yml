@@ -174,7 +174,10 @@ tools:
           - { kind: chocolatey, package: gitleaks }
           - { kind: scoop, package: gitleaks }
     run:
-      argv: ["gitleaks", "detect", "--no-git", "--redact", "--report-format", "json", "--report-path", "/dev/stdout"]
+      # `--source .` scans the workspace (the default is the process cwd, which a host
+      # may not set) and `-` writes the JSON report to stdout; `/dev/stdout` is not
+      # honoured and produced an empty capture.
+      argv: ["gitleaks", "detect", "--no-git", "--source", ".", "--redact", "--report-format", "json", "--report-path", "-"]
       timeout_seconds: 300
     parse: gitleaks-json
     facts: [detector-candidate]
@@ -193,7 +196,9 @@ tools:
         detect: { executable: semgrep.exe }
         install: [{ kind: pipx, package: semgrep }]
     run:
-      argv: ["semgrep", "--config", "{{seeds}}/semgrep/rust-security.yaml", "--json", "--metrics=off", "--quiet"]
+      # Rule ids stay as authored: without this flag semgrep namespaces every id with
+      # the config file's absolute path, so a fact id would carry a local path.
+      argv: ["semgrep", "--no-rewrite-rule-ids", "--config", "{{seeds}}/semgrep/rust-security.yaml", "--json", "--metrics=off", "--quiet"]
       timeout_seconds: 600
     parse: semgrep-json
     facts: [detector-candidate]
