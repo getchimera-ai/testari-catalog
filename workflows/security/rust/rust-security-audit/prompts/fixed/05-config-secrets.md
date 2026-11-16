@@ -38,3 +38,9 @@ One entry per issue:
 - Never reproduce a secret value. Location, type and a redacted prefix are enough to act.
 - A secret in a test fixture is still a finding unless it is provably a placeholder; prove it.
 - Configuration findings need the same evidence bar as code findings: file, line, quote.
+
+## Delivering the answer
+
+Report this document as the step's answer: call `audit_report` with `outcome: "done"` and
+`answers: [{"name": "config-review", "body": { …the document above… }}]`. The unit cannot complete
+without it, and later steps read it under that name.

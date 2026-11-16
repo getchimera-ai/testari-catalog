@@ -39,3 +39,9 @@ One entry per dependency concern:
   showed.
 - An advisory is not a finding until its precondition is checked against this workspace.
 - Never restate the advisory text as your analysis; add what makes it true or false here.
+
+## Delivering the answer
+
+Report this document as the step's answer: call `audit_report` with `outcome: "done"` and
+`answers: [{"name": "supply-chain", "body": { …the document above… }}]`. The unit cannot complete
+without it, and later steps read it under that name.

@@ -43,3 +43,9 @@ messages from `cargo check`, project context, the scope model and, where the too
 - Cite the fact, the AST unit or the symbol that establishes each entry.
 - A feature set you did not verify is not a feature set: say `unknown` rather than assuming.
 - Do not re-run the tools; their facts are already in the context.
+
+## Delivering the answer
+
+Report this document as the step's answer: call `audit_report` with `outcome: "done"` and
+`answers: [{"name": "build-truth", "body": { …the document above… }}]`. The unit cannot complete
+without it, and later steps read it under that name.

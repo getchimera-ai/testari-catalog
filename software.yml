@@ -1,10 +1,11 @@
 # The shared deterministic tools. A workflow names them by id.
 #
 # install is a list because a fleet mixes package managers: Homebrew on macOS,
-# WinGet on Windows, and apt, dnf, yum, zypper, apk or pacman on Linux. A host
-# picks the instruction whose kind matches its package manager. A tool with no
-# instruction for a platform carries its source instead and is reported missing
-# until the person installs it.
+# WinGet, Chocolatey or Scoop on Windows, and apt, dnf, yum, zypper, apk or
+# pacman on Linux. A host picks the first instruction whose kind matches a
+# package manager it actually has. A tool with no instruction for a platform
+# carries its source instead and is reported missing until the person installs
+# it.
 #
 # `{{seeds}}` in an argv is resolved by the engine to the absolute path of the
 # workflow's `seeds/` directory, so a tool can read rules shipped beside the
@@ -24,7 +25,12 @@ tools:
           - { kind: zypper, package: rust }
           - { kind: apk, package: rust }
           - { kind: pacman, package: rust }
-      windows: { detect: { executable: cargo.exe }, install: [{ kind: winget, package: Rustlang.Rustup }] }
+      windows:
+        detect: { executable: cargo.exe }
+        install:
+          - { kind: winget, package: Rustlang.Rustup }
+          - { kind: chocolatey, package: rustup.install }
+          - { kind: scoop, package: rustup }
     run:
       argv: ["cargo", "metadata", "--format-version", "1"]
       timeout_seconds: 180
@@ -45,7 +51,12 @@ tools:
           - { kind: zypper, package: rust }
           - { kind: apk, package: rust }
           - { kind: pacman, package: rust }
-      windows: { detect: { executable: cargo.exe }, install: [{ kind: winget, package: Rustlang.Rustup }] }
+      windows:
+        detect: { executable: cargo.exe }
+        install:
+          - { kind: winget, package: Rustlang.Rustup }
+          - { kind: chocolatey, package: rustup.install }
+          - { kind: scoop, package: rustup }
     run:
       argv: ["cargo", "check", "--workspace", "--all-targets", "--all-features", "--message-format=json"]
       timeout_seconds: 900
@@ -66,7 +77,12 @@ tools:
           - { kind: zypper, package: rust }
           - { kind: apk, package: rust }
           - { kind: pacman, package: rust }
-      windows: { detect: { executable: cargo.exe }, install: [{ kind: winget, package: Rustlang.Rustup }] }
+      windows:
+        detect: { executable: cargo.exe }
+        install:
+          - { kind: winget, package: Rustlang.Rustup }
+          - { kind: chocolatey, package: rustup.install }
+          - { kind: scoop, package: rustup }
     run:
       argv: ["cargo", "clippy", "--workspace", "--all-targets", "--all-features", "--message-format=json", "--", "-W", "clippy::unwrap_used", "-W", "clippy::expect_used", "-W", "clippy::panic", "-W", "clippy::mem_forget", "-W", "clippy::arithmetic_side_effects", "-W", "clippy::undocumented_unsafe_blocks", "-W", "clippy::multiple_unsafe_ops_per_block", "-W", "clippy::indexing_slicing", "-W", "clippy::string_slice"]
       timeout_seconds: 900
@@ -174,7 +190,10 @@ tools:
           - { kind: apk, package: gitleaks }
       windows:
         detect: { executable: gitleaks.exe }
-        install: [{ kind: winget, package: Gitleaks.Gitleaks }]
+        install:
+          - { kind: winget, package: Gitleaks.Gitleaks }
+          - { kind: chocolatey, package: gitleaks }
+          - { kind: scoop, package: gitleaks }
     run:
       argv: ["gitleaks", "detect", "--no-git", "--redact", "--report-format", "json", "--report-path", "/dev/stdout"]
       timeout_seconds: 300
@@ -219,4 +238,11 @@ tools:
           - { kind: zypper, package: rust-analyzer }
           - { kind: apk, package: rust-analyzer }
           - { kind: pacman, package: rust-analyzer }
-      windows: { detect: { executable: rust-analyzer.exe }, install: [{ kind: winget, package: Rustlang.Rustup }] }
+      # rustup's proxy of the same name exists even when the component is not
+      # installed, so a WinGet rustup install would read as present while
+      # answering nothing. Both managers below deliver the real binary.
+      windows:
+        detect: { executable: rust-analyzer.exe }
+        install:
+          - { kind: chocolatey, package: rust-analyzer }
+          - { kind: scoop, package: rust-analyzer }

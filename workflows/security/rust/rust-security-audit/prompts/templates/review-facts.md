@@ -38,3 +38,9 @@ One judgement per fact or merged fact group:
   true or false.
 - A silent skip is not a refutation. If you cannot judge it, `needs-context` with the missing
   input named.
+
+## Delivering the answer
+
+Report this document as the step's answer: call `audit_report` with `outcome: "done"` and
+`answers: [{"name": "fact-judgements", "body": { …the document above… }}]`. The unit cannot complete
+without it, and later steps read it under that name.

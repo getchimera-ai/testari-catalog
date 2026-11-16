@@ -51,3 +51,9 @@ integrity against corruption, a test fixture). Say which.
 One entry per issue: class (`crypto`, `randomness`, `secret-comparison`, `password-storage`,
 `key-management`, `authentication`, `authorization`, `transport`), location, evidence, impact,
 remediation.
+
+## Delivering the answer
+
+Report this document as the step's answer: call `audit_report` with `outcome: "done"` and
+`answers: [{"name": "crypto-auth-review", "body": { …the document above… }}]`. The unit cannot complete
+without it, and later steps read it under that name.

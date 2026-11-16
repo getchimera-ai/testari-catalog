@@ -46,3 +46,9 @@ Every finding carries:
 
 If a fact does not hold, emit a `refuted` judgement with the reason. If the file has no defects,
 emit `clean`. Never invent a file, line, quote or fact id.
+
+## Delivering the answer
+
+Report this document as the step's answer: call `audit_report` with `outcome: "done"` and
+`answers: [{"name": "file-review", "body": { …the document above… }}]`. The unit cannot complete
+without it, and later steps read it under that name.

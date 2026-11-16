@@ -29,3 +29,19 @@ not run tools; every claim must already exist in the inputs.
 - A refuted tool fact stays refuted and is retained in the audit trail.
 - Say `clean` only when every declared input is accounted for and every coverage dimension is
   closed or explicitly listed as a gap.
+
+## Delivering the answer
+
+This step produces three answers. Call `audit_report` with `outcome: "done"` and one entry per
+name:
+
+```json
+"answers": [
+  {"name": "findings", "body": { "findings": [ … ] }},
+  {"name": "coverage", "body": { "coverage": [ … ] }},
+  {"name": "gaps", "body": { "gaps": [ … ] }}
+]
+```
+
+Every declared name must appear exactly once. The unit cannot complete without them, and the
+export reads them under those names.

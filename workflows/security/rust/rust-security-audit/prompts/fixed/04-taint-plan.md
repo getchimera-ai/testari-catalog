@@ -42,3 +42,9 @@ Build the taint plan from the code, not from a checklist.
 - Every class names a real file and symbol. A generic "check for injection" entry is not a plan.
 - Do not include a class whose source or sink does not exist in this workspace.
 - This plan drives the per-file and per-sink prompts; make it precise enough to be followed.
+
+## Delivering the answer
+
+Report this document as the step's answer: call `audit_report` with `outcome: "done"` and
+`answers: [{"name": "taint-plan", "body": { …the document above… }}]`. The unit cannot complete
+without it, and later steps read it under that name.

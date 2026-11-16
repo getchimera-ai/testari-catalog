@@ -29,3 +29,9 @@ references, related units, tool facts, project context, the scope model and the 
 - quote the source, the transform (or its absence) and the sink, each with `file:line`;
 - a trace that leaves the context is `unknown`, never `not-exploitable`;
 - never claim an attacker capability the scope model does not grant.
+
+## Delivering the answer
+
+Report this document as the step's answer: call `audit_report` with `outcome: "done"` and
+`answers: [{"name": "taint-reviews", "body": { …the document above… }}]`. The unit cannot complete
+without it, and later steps read it under that name.

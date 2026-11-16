@@ -37,3 +37,9 @@ project context and the build truth. Do not re-read unrelated files.
 ## Output
 
 One cluster review: invariant, per-operation findings, caller check, verdict, remediation.
+
+## Delivering the answer
+
+Report this document as the step's answer: call `audit_report` with `outcome: "done"` and
+`answers: [{"name": "unsafe-reviews", "body": { …the document above… }}]`. The unit cannot complete
+without it, and later steps read it under that name.

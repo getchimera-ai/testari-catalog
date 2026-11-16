@@ -40,3 +40,9 @@ A scope model:
   only called internally has a different threat model from a service.
 - Never invent an entry point, an asset or an attacker capability. If the manifests and code do
   not show it, it is not in scope.
+
+## Delivering the answer
+
+Report this document as the step's answer: call `audit_report` with `outcome: "done"` and
+`answers: [{"name": "scope", "body": { …the document above… }}]`. The unit cannot complete
+without it, and later steps read it under that name.
