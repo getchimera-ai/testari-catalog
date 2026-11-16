@@ -8,7 +8,8 @@ references, related units, tool facts, project context, the scope model and the 
 1. **Identify the sink.** The operation and the class from the taint plan: process execution, SQL,
    filesystem write or path join, network client, unsafe pointer operation, FFI call, URL or
    template construction, authorization decision, log of sensitive data.
-2. **Trace backwards.** Using AST and LSP references, follow the argument to every source:
+2. **Trace backwards.** Using the AST and the LSP call hierarchy and references, follow the
+   argument to every source:
    request data, headers, CLI arguments, environment, files, database rows, FFI inputs,
    deserialization. Name each source with `file:line`, and mark which ones the scope model declares
    attacker-controlled.

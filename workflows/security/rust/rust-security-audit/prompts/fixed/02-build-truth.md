@@ -4,8 +4,9 @@ You are establishing what actually gets compiled and executed, because security 
 wrong when they are based on the wrong build.
 
 You receive: AST units and LSP symbols for the workspace, the package/target/dependency facts from
-`cargo metadata` (full graph, features resolved), project context, the scope model and, where the
-tool is installed, `cargo geiger` unsafe metrics.
+`cargo metadata` (full graph, features resolved), the compiler diagnostics and build-script
+messages from `cargo check`, project context, the scope model and, where the tool is installed,
+`cargo geiger` unsafe metrics.
 
 ## Your task
 
@@ -15,12 +16,14 @@ tool is installed, `cargo geiger` unsafe metrics.
 2. **Features and cfg gates.** Which features are enabled, which code is cfg-gated, and whether a
    security-relevant path is compiled in production. Name the feature set you used.
 3. **Build scripts.** Every `build.rs`: what it reads, what it writes, which processes it starts,
-   which environment variables it trusts.
+   which environment variables it trusts. Record the `cargo:rustc-cfg` flags and `cargo:rustc-env`
+   values each script emitted — that is the build's real configuration, not the one in the docs.
 4. **Proc macros.** Direct and transitive. Third-party proc macros execute arbitrary code during
    compilation.
 5. **Unsafe inventory.** Every `unsafe` block, `unsafe fn`, `unsafe impl`, raw-pointer operation
    and FFI `extern` block, with `file:line` and the crate. Group them into clusters: one cluster is
-   a contiguous unsafe region with one invariant.
+   a contiguous unsafe region with one invariant. Where macro-expanded code is provided as a
+   source, include unsafe operations that only exist after expansion; say that they were expanded.
 6. **Profile flags.** Panic strategy, overflow checks, debug assertions, LTO, `RUSTFLAGS` and the
    pinned toolchain, as declared.
 

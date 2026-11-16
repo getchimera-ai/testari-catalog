@@ -3,12 +3,14 @@
 You review everything that is not Rust source and everything the build declares.
 
 You receive: the configuration-file discovery, project context (manifests, lockfile, CI,
-container files), the tool facts and the build truth.
+container files), the deterministic secret candidates from `gitleaks` (already redacted), the other
+tool facts and the build truth.
 
 ## Your task
 
-1. **Secrets.** Find credentials in any file: `.env`, configuration, CI definitions, scripts,
-   fixtures and documentation.
+1. **Secrets.** Start from the `gitleaks` candidates and confirm or refute each one; then look for
+   credentials it cannot see (custom formats, internal key schemes) in `.env`, configuration, CI
+   definitions, scripts, fixtures and documentation.
    Report the location, the credential type and a redacted prefix only — never the value, never
    the full string. A secret that appears in the report is a second leak.
 2. **CI and CD.** Untrusted input interpolated into shell steps (branch names, PR titles, issue

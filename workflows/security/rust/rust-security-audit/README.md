@@ -10,8 +10,9 @@ configuration lets through. It reports only defects with exact evidence.
    database, deserialization, FFI), the assets at risk and the attacker-controlled inputs. Says
    plainly what is out of scope.
 2. **Build truth** — resolves the real build: workspace members and target kinds, enabled
-   features and cfg-gated code, build scripts, proc macros, every unsafe site and FFI boundary,
-   panic and overflow settings. A finding based on the wrong build is not a finding.
+   features and cfg-gated code, the cfg flags and environment each build script emits, proc macros,
+   every unsafe site and FFI boundary, panic and overflow settings. A finding based on the wrong
+   build is not a finding.
 3. **Supply chain** — judges `cargo audit` advisories, `cargo deny` bans and licences, unmaintained
    and yanked crates, git and path dependencies, patched forks, and the build scripts and proc
    macros that execute code during compilation. Each advisory is checked for reachability, with a
@@ -29,9 +30,10 @@ configuration lets through. It reports only defects with exact evidence.
 8. **Sink tracing** — one review per dangerous sink: the argument traced back through every source,
    the transform that must stand in between, and a verdict of exploitable, not exploitable or
    unknown.
-9. **Configuration and secrets** — secrets in any file (reported redacted, never reproduced), CI
-   injection and token exposure, container and deployment hardening, cargo profiles and
-   build flags, TLS and network defaults.
+9. **Configuration and secrets** — every secret candidate from gitleaks confirmed or refuted, plus
+   custom formats it cannot see; secrets in any file are reported redacted, never reproduced. CI
+   injection and token exposure, container and deployment hardening, cargo profiles and build
+   flags, TLS and network defaults.
 10. **Consolidation and verification** — duplicates merged by fingerprint, provenance kept, findings
     ranked by impact and reachability, coverage reported by crate, target, feature set, unsafe
     cluster and sink class, gaps closed within the declared bound.
@@ -50,8 +52,12 @@ describe it.
 ## Requirements
 
 - Rust and `cargo`;
-- `cargo-audit`, `cargo-deny` and `rust-analyzer` are required and detected before the audit
-  starts; the audit refuses to start when a declared tool is missing;
+- `cargo-audit`, `cargo-deny`, `gitleaks` and `rust-analyzer` are required and detected before the
+  audit starts; the audit refuses to start when a declared tool is missing;
 - `cargo-geiger` is used when installed for unsafe metrics and reported as unavailable otherwise.
+
+Reachability is established through rust-analyzer's call hierarchy and references, not by guessing
+from names: advisories, lints and sinks are judged by whether workspace code can actually reach
+them.
 
 Everything runs locally. No upload, no account, no telemetry.

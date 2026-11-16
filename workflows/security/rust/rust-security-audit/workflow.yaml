@@ -39,6 +39,19 @@ tools:
     parse: cargo-metadata-json
     facts: [package, dependency, target]
 
+  - id: cargo-check
+    kind: external
+    purpose: Compiler diagnostics for the real build, plus the cfg flags and environment each build script sets
+    platforms:
+      macos: { detect: { executable: cargo }, install: { kind: homebrew, package: rust } }
+      linux: { detect: { executable: cargo }, install: { kind: apt, package: cargo } }
+      windows: { detect: { executable: cargo.exe }, install: { kind: winget, package: Rustlang.Rustup } }
+    run:
+      argv: ["cargo", "check", "--workspace", "--all-targets", "--all-features", "--message-format=json"]
+      timeout_seconds: 900
+    parse: rustc-json
+    facts: [compiler-error, lint, correctness, suspicious]
+
   - id: cargo-clippy
     kind: external
     purpose: Lints, correctness, suspicious constructs and the security-relevant restriction lints
@@ -80,6 +93,19 @@ tools:
     parse: cargo-deny-json
     facts: [licence, ban, source, advisory]
 
+  - id: gitleaks
+    kind: external
+    purpose: Deterministic offline secret scan across sources, configuration and CI; runs with redaction so no secret value reaches a report
+    platforms:
+      macos: { detect: { executable: gitleaks }, install: { kind: homebrew, package: gitleaks } }
+      linux: { detect: { executable: gitleaks } }
+      windows: { detect: { executable: gitleaks.exe }, install: { kind: winget, package: Gitleaks.Gitleaks } }
+    run:
+      argv: ["gitleaks", "detect", "--no-git", "--redact", "--report-format", "json", "--report-path", "/dev/stdout"]
+      timeout_seconds: 300
+    parse: gitleaks-json
+    facts: [detector-candidate]
+
   - id: cargo-geiger
     kind: external
     purpose: Unsafe-code metrics per crate and dependency, including unsafe in the dependency tree
@@ -102,7 +128,7 @@ tools:
 
   - id: rust-analyzer
     kind: lsp
-    purpose: Language-server symbols and references for every reviewed file
+    purpose: Symbols, incoming and outgoing call hierarchy, references and diagnostics — the reachability substrate every prompt receives
     platforms:
       macos: { detect: { executable: rust-analyzer }, install: { kind: homebrew, package: rust-analyzer } }
       linux: { detect: { executable: rust-analyzer }, install: { kind: apt, package: rust-analyzer } }
