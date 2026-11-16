@@ -1,0 +1,738 @@
+schema_version: 2
+catalog_version: "0.2.0"
+min_testari_version: "0.1.0"
+
+profiles:
+  - id: rust-security
+    name: Rust security
+    description: Deterministic Rust security rules followed by a dynamic audit phase.
+    languages: [rust]
+    rules:
+      - rust.command-injection
+      - rust.hardcoded-secret
+      - rust.sql-injection
+      - rust.unsafe-block
+      - rust.weak-crypto
+
+  - id: go-security
+    name: Go security
+    description: Deterministic Go security rules followed by a dynamic audit phase.
+    languages: [go]
+    rules:
+      - go.command-injection
+      - go.hardcoded-secret
+      - go.sql-from-input
+      - go.unsafe-pointer
+      - go.weak-crypto
+
+  - id: python-security
+    name: Python security
+    description: Deterministic Python security rules followed by a dynamic audit phase.
+    languages: [python]
+    rules:
+      - python.command-injection
+      - python.hardcoded-secret
+      - python.sql-from-input
+      - python.unsafe-deserialization
+      - python.weak-crypto
+
+  - id: typescript-security
+    name: TypeScript security
+    description: Deterministic TypeScript security rules followed by a dynamic audit phase.
+    languages: [typescript]
+    rules:
+      - typescript.command-injection
+      - typescript.dynamic-code
+      - typescript.hardcoded-secret
+      - typescript.sql-from-input
+      - typescript.weak-crypto
+
+  - id: flutter
+    name: Flutter
+    description: Language grouping for agent-led Flutter audits.
+    languages: [dart]
+    rules: []
+
+rules:
+  - id: rust.command-injection
+    title: Command injection through a process launcher
+    description: >-
+      A command is built from input and passed to a shell or process launcher without
+      separating the executable from untrusted arguments.
+    category: command-injection
+    cwe: [CWE-78]
+    default_severity: critical
+    detector:
+      kind: builtin
+      id: rust-command-injection
+    remediation: >-
+      Pass arguments directly to std::process::Command; never build a shell string from
+      untrusted input. Allowlist the executable and validate every argument.
+    help_uri: "https://cwe.mitre.org/data/definitions/78.html"
+    languages: [rust]
+
+  - id: rust.hardcoded-secret
+    title: Hard-coded credential
+    description: >-
+      A password, token, private key or other credential is embedded in source code or a
+      committed configuration file.
+    category: secrets
+    cwe: [CWE-798]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: rust-hardcoded-secret
+    remediation: >-
+      Load secrets from the environment or a secret manager at runtime. Rotate any credential
+      that was committed and remove it from history.
+    help_uri: "https://cwe.mitre.org/data/definitions/798.html"
+    languages: [rust]
+
+  - id: rust.sql-injection
+    title: SQL injection through dynamically built query text
+    description: >-
+      Untrusted input is formatted or concatenated into a SQL statement instead of being bound
+      as a query parameter.
+    category: sql-injection
+    cwe: [CWE-89]
+    default_severity: critical
+    detector:
+      kind: builtin
+      id: rust-sql-from-input
+    remediation: >-
+      Use parameterized queries or prepared statements. Never concatenate untrusted input into
+      SQL text; validate and bind values instead.
+    help_uri: "https://cwe.mitre.org/data/definitions/89.html"
+    languages: [rust]
+
+  - id: rust.unsafe-block
+    title: Unsafe block or function
+    description: >-
+      An unsafe block or unsafe function bypasses Rust's memory-safety guarantees. Every unsafe
+      operation must uphold a documented invariant and be isolated behind a safe API.
+    category: memory-safety
+    cwe: [CWE-119]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: rust-unsafe-block
+    remediation: >-
+      Prefer safe alternatives. If unsafe is unavoidable, document the safety invariant,
+      encapsulate it behind a safe API, and add tests that exercise the invariant.
+    help_uri: "https://cwe.mitre.org/data/definitions/119.html"
+    languages: [rust]
+
+  - id: rust.weak-crypto
+    title: Weak or broken cryptography
+    description: >-
+      A security decision uses a broken or deprecated primitive, such as MD5, SHA-1, DES or RC4,
+      or uses a strong primitive with insufficient key material.
+    category: cryptography
+    cwe: [CWE-327, CWE-328]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: rust-weak-crypto
+    remediation: >-
+      Use a current primitive from a maintained crate, for example SHA-256 or
+      ChaCha20-Poly1305. Do not use MD5, SHA-1, DES or RC4 for security decisions.
+    help_uri: "https://cwe.mitre.org/data/definitions/327.html"
+    languages: [rust]
+
+  - id: go.command-injection
+    title: Command injection through a Go process launcher
+    description: >-
+      A shell executable is launched through exec.Command or exec.CommandContext with an
+      argument built from input.
+    category: command-injection
+    cwe: [CWE-78]
+    default_severity: critical
+    detector:
+      kind: builtin
+      id: go-command-injection
+    remediation: >-
+      Pass each argument separately to exec.Command with a fixed executable. Never pass
+      untrusted input to a shell invoked with -c.
+    help_uri: "https://cwe.mitre.org/data/definitions/78.html"
+    languages: [go]
+
+  - id: go.sql-from-input
+    title: SQL injection through formatted Go query text
+    description: >-
+      Input is interpolated into a SQL statement with fmt.Sprintf or concatenation instead of
+      being bound as a query parameter.
+    category: sql-injection
+    cwe: [CWE-89]
+    default_severity: critical
+    detector:
+      kind: builtin
+      id: go-sql-from-input
+    remediation: >-
+      Use parameterized queries or prepared statements. Never interpolate untrusted input into
+      SQL text; validate and bind values instead.
+    help_uri: "https://cwe.mitre.org/data/definitions/89.html"
+    languages: [go]
+
+  - id: go.weak-crypto
+    title: Weak or broken Go cryptography
+    description: >-
+      A security decision uses crypto/md5, crypto/sha1, crypto/des or crypto/rc4, or uses a
+      strong primitive with insufficient key material.
+    category: cryptography
+    cwe: [CWE-327, CWE-328]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: go-weak-crypto
+    remediation: >-
+      Use SHA-256 or a current authenticated cipher from the standard library or a maintained
+      module. Do not use MD5, SHA-1, DES or RC4 for security decisions.
+    help_uri: "https://cwe.mitre.org/data/definitions/327.html"
+    languages: [go]
+
+  - id: go.hardcoded-secret
+    title: Hard-coded Go credential
+    description: >-
+      A password, token, private key or other credential is embedded in a Go const, var,
+      short declaration or assignment.
+    category: secrets
+    cwe: [CWE-798]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: go-hardcoded-secret
+    remediation: >-
+      Load secrets from the environment or a secret manager at runtime. Rotate any credential
+      that was committed and remove it from history.
+    help_uri: "https://cwe.mitre.org/data/definitions/798.html"
+    languages: [go]
+
+  - id: go.unsafe-pointer
+    title: Conversion to unsafe.Pointer
+    description: >-
+      A value is converted to unsafe.Pointer, bypassing Go's type and memory safety. Every
+      conversion must uphold a documented invariant and be isolated behind a safe API.
+    category: memory-safety
+    cwe: [CWE-119]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: go-unsafe-pointer
+    remediation: >-
+      Avoid unsafe.Pointer. If it is unavoidable, document the invariant, encapsulate it behind
+      a safe API, and add tests that exercise the invariant.
+    help_uri: "https://cwe.mitre.org/data/definitions/119.html"
+    languages: [go]
+
+  - id: python.command-injection
+    title: Command injection through a Python process launcher
+    description: >-
+      A process or shell is launched through subprocess with shell=True or through os.system or
+      os.popen with an argument built from input.
+    category: command-injection
+    cwe: [CWE-78]
+    default_severity: critical
+    detector:
+      kind: builtin
+      id: python-command-injection
+    remediation: >-
+      Pass an argument list without a shell and validate each argument. Never pass untrusted
+      input to os.system or to subprocess with shell=True.
+    help_uri: "https://cwe.mitre.org/data/definitions/78.html"
+    languages: [python]
+
+  - id: python.sql-from-input
+    title: SQL injection through formatted Python query text
+    description: >-
+      Input is interpolated into a SQL statement with %, +, .format or an f-string and passed to
+      execute or executemany instead of being bound as a query parameter.
+    category: sql-injection
+    cwe: [CWE-89]
+    default_severity: critical
+    detector:
+      kind: builtin
+      id: python-sql-from-input
+    remediation: >-
+      Pass the statement and its parameters separately to execute. Never interpolate untrusted
+      input into SQL text.
+    help_uri: "https://cwe.mitre.org/data/definitions/89.html"
+    languages: [python]
+
+  - id: python.weak-crypto
+    title: Weak or broken Python cryptography
+    description: >-
+      A security decision uses hashlib.md5 or sha1, Crypto.Cipher.DES or ARC4, or the hashes
+      module's MD5 or SHA1.
+    category: cryptography
+    cwe: [CWE-327, CWE-328]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: python-weak-crypto
+    remediation: >-
+      Use SHA-256 or a current authenticated cipher from a maintained library. Do not use MD5,
+      SHA-1, DES or RC4 for security decisions.
+    help_uri: "https://cwe.mitre.org/data/definitions/327.html"
+    languages: [python]
+
+  - id: python.hardcoded-secret
+    title: Hard-coded Python credential
+    description: >-
+      A password, token, private key or other credential is embedded in a Python assignment,
+      named expression or default parameter.
+    category: secrets
+    cwe: [CWE-798]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: python-hardcoded-secret
+    remediation: >-
+      Load secrets from the environment or a secret manager at runtime. Rotate any credential
+      that was committed and remove it from history.
+    help_uri: "https://cwe.mitre.org/data/definitions/798.html"
+    languages: [python]
+
+  - id: python.unsafe-deserialization
+    title: Unsafe Python deserialization
+    description: >-
+      Untrusted input is deserialized with yaml.load without a safe loader, pickle or marshal,
+      allowing arbitrary object construction.
+    category: deserialization
+    cwe: [CWE-502]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: python-unsafe-deserialization
+    remediation: >-
+      Use yaml.safe_load or an explicit SafeLoader. Never unpickle or unmarshal untrusted input;
+      use a bounded data format instead.
+    help_uri: "https://cwe.mitre.org/data/definitions/502.html"
+    languages: [python]
+
+  - id: typescript.command-injection
+    title: Command injection through child_process
+    description: >-
+      A command is launched through child_process exec, spawn or execFile with a command built
+      from input or with shell enabled.
+    category: command-injection
+    cwe: [CWE-78]
+    default_severity: critical
+    detector:
+      kind: builtin
+      id: typescript-command-injection
+    remediation: >-
+      Use execFile or spawn with an argument array and no shell. Never interpolate untrusted
+      input into a shell command.
+    help_uri: "https://cwe.mitre.org/data/definitions/78.html"
+    languages: [typescript]
+
+  - id: typescript.sql-from-input
+    title: SQL injection through TypeScript query text
+    description: >-
+      Input is interpolated into a SQL template string or concatenation and passed to a query or
+      execute call instead of being bound as a query parameter.
+    category: sql-injection
+    cwe: [CWE-89]
+    default_severity: critical
+    detector:
+      kind: builtin
+      id: typescript-sql-from-input
+    remediation: >-
+      Pass the statement and its parameters separately to the driver. Never interpolate
+      untrusted input into SQL text.
+    help_uri: "https://cwe.mitre.org/data/definitions/89.html"
+    languages: [typescript]
+
+  - id: typescript.weak-crypto
+    title: Weak or broken TypeScript cryptography
+    description: >-
+      A security decision uses createHash, createHmac, createCipheriv or createDecipheriv with
+      md5, sha1, des or rc4, or subtle.digest with SHA-1.
+    category: cryptography
+    cwe: [CWE-327, CWE-328]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: typescript-weak-crypto
+    remediation: >-
+      Use SHA-256 or a current authenticated cipher. Do not use MD5, SHA-1, DES or RC4 for
+      security decisions.
+    help_uri: "https://cwe.mitre.org/data/definitions/327.html"
+    languages: [typescript]
+
+  - id: typescript.hardcoded-secret
+    title: Hard-coded TypeScript credential
+    description: >-
+      A password, token, private key or other credential is embedded in a TypeScript variable,
+      object property or assignment.
+    category: secrets
+    cwe: [CWE-798]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: typescript-hardcoded-secret
+    remediation: >-
+      Load secrets from the environment or a secret manager at runtime. Rotate any credential
+      that was committed and remove it from history.
+    help_uri: "https://cwe.mitre.org/data/definitions/798.html"
+    languages: [typescript]
+
+  - id: typescript.dynamic-code
+    title: Dynamic TypeScript code execution
+    description: >-
+      Code is constructed from input and executed with eval, new Function or a string passed to
+      setTimeout or setInterval.
+    category: code-execution
+    cwe: [CWE-95]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: typescript-dynamic-code
+    remediation: >-
+      Do not evaluate strings as code. Use JSON.parse for data and pass functions, not code
+      strings, to timers.
+    help_uri: "https://cwe.mitre.org/data/definitions/95.html"
+    languages: [typescript]
+
+workflows:
+  - id: rust-security-audit
+    name: Rust security audit
+    rationale: >-
+      Seed deterministic Rust security candidates, then plan, verify and gap-close the
+      investigation with the calling agent.
+    profile: rust-security
+    rules:
+      - rust.command-injection
+      - rust.hardcoded-secret
+      - rust.sql-injection
+      - rust.unsafe-block
+      - rust.weak-crypto
+    inputs:
+      - id: roots
+        name: Audit roots
+        description: Directories inside the run roots to audit.
+        kind: path
+        required: true
+      - id: focus
+        name: Focus symbol
+        description: Optional symbol path that narrows the investigation.
+        kind: symbol
+        required: false
+    dynamic:
+      plan_schema_version: 2
+      stages: [seed, plan, validate, execute, verify, gap_close, consolidate]
+      max_gap_iterations: 3
+      evidence_required: true
+      cross_check: true
+
+  - id: go-security-audit
+    name: Go security audit
+    rationale: >-
+      Seed deterministic Go security candidates, then plan, verify and gap-close the
+      investigation with the calling agent.
+    profile: go-security
+    rules:
+      - go.command-injection
+      - go.hardcoded-secret
+      - go.sql-from-input
+      - go.unsafe-pointer
+      - go.weak-crypto
+    inputs:
+      - id: roots
+        name: Audit roots
+        description: Directories inside the run roots to audit.
+        kind: path
+        required: true
+      - id: focus
+        name: Focus symbol
+        description: Optional symbol path that narrows the investigation.
+        kind: symbol
+        required: false
+    dynamic:
+      plan_schema_version: 2
+      stages: [seed, plan, validate, execute, verify, gap_close, consolidate]
+      max_gap_iterations: 3
+      evidence_required: true
+      cross_check: true
+
+  - id: python-security-audit
+    name: Python security audit
+    rationale: >-
+      Seed deterministic Python security candidates, then plan, verify and gap-close the
+      investigation with the calling agent.
+    profile: python-security
+    rules:
+      - python.command-injection
+      - python.hardcoded-secret
+      - python.sql-from-input
+      - python.unsafe-deserialization
+      - python.weak-crypto
+    inputs:
+      - id: roots
+        name: Audit roots
+        description: Directories inside the run roots to audit.
+        kind: path
+        required: true
+      - id: focus
+        name: Focus symbol
+        description: Optional symbol path that narrows the investigation.
+        kind: symbol
+        required: false
+    dynamic:
+      plan_schema_version: 2
+      stages: [seed, plan, validate, execute, verify, gap_close, consolidate]
+      max_gap_iterations: 3
+      evidence_required: true
+      cross_check: true
+
+  - id: typescript-security-audit
+    name: TypeScript security audit
+    rationale: >-
+      Seed deterministic TypeScript security candidates, then plan, verify and gap-close the
+      investigation with the calling agent.
+    profile: typescript-security
+    rules:
+      - typescript.command-injection
+      - typescript.dynamic-code
+      - typescript.hardcoded-secret
+      - typescript.sql-from-input
+      - typescript.weak-crypto
+    inputs:
+      - id: roots
+        name: Audit roots
+        description: Directories inside the run roots to audit.
+        kind: path
+        required: true
+      - id: focus
+        name: Focus symbol
+        description: Optional symbol path that narrows the investigation.
+        kind: symbol
+        required: false
+    dynamic:
+      plan_schema_version: 2
+      stages: [seed, plan, validate, execute, verify, gap_close, consolidate]
+      max_gap_iterations: 3
+      evidence_required: true
+      cross_check: true
+
+  - id: flutter-security-audit
+    name: Flutter security audit
+    rationale: >-
+      Review a Flutter application's security boundaries with the calling agent: secret storage,
+      transport security, WebView bridges, permissions and logging. The audit is detector-free;
+      the agent plans against the criteria, reports evidence and gap-closes like any other run.
+    mode: agent-led
+    profile: flutter
+    criteria:
+      - id: flutter.security.secure-storage
+        title: Secret storage
+        description: >-
+          Credentials, tokens and keys are stored in the platform keystore or secure enclave, not
+          in SharedPreferences, plain files or source code.
+        category: secrets
+        severity: high
+        remediation: Use flutter_secure_storage or the platform keystore API; never commit secrets.
+      - id: flutter.security.transport
+        title: Transport security
+        description: >-
+          Network calls use TLS, do not disable certificate validation, and declare no cleartext
+          traffic exception without a documented reason.
+        category: cryptography
+        severity: high
+        cwe: CWE-295
+        remediation: Remove badCertificateCallback overrides and cleartext exceptions.
+      - id: flutter.security.webview
+        title: WebView and JS bridge
+        description: >-
+          WebViews load trusted origins only and expose no JavaScript bridge that reaches
+          privileged platform channels with untrusted input.
+        category: injection
+        severity: high
+        cwe: CWE-79
+        remediation: Allowlist origins and keep the JS bridge minimal and validated.
+      - id: flutter.security.permissions
+        title: Platform permissions
+        description: >-
+          The manifest and Info.plist request only the permissions the application uses, with a
+          user-facing purpose string.
+        category: configuration
+        severity: medium
+        remediation: Remove unused permissions and explain each requested one.
+      - id: flutter.security.logging
+        title: Sensitive logging
+        description: >-
+          Logs, analytics and crash reports carry no tokens, personal data or full request bodies.
+        category: privacy
+        severity: medium
+        remediation: Redact sensitive fields before logging or reporting.
+    inputs:
+      - id: roots
+        name: Audit roots
+        description: Directories inside the run roots to audit.
+        kind: path
+        required: true
+      - id: focus
+        name: Focus symbol
+        description: Optional symbol path that narrows the investigation.
+        kind: symbol
+        required: false
+    dynamic:
+      plan_schema_version: 2
+      stages: [seed, plan, validate, execute, verify, gap_close, consolidate]
+      max_gap_iterations: 3
+      evidence_required: true
+      cross_check: true
+    tooling:
+      - id: flutter
+        purpose: Flutter SDK used for Dart analysis.
+        verified: true
+        source: "https://docs.flutter.dev/get-started/install"
+        platforms:
+          macos:
+            detect: flutter
+            install:
+              kind: homebrew
+              package: flutter
+          linux:
+            detect: flutter
+      - id: semgrep
+        purpose: Optional structural queries over Dart source.
+        verified: false
+        source: "https://semgrep.dev/docs/supported-languages"
+        platforms:
+          macos:
+            detect: semgrep
+
+  - id: flutter-design-audit
+    name: Flutter design review
+    rationale: >-
+      Review a Flutter application's architecture and user-facing quality with the calling agent:
+      layering, state ownership, accessibility and error handling.
+    mode: agent-led
+    profile: flutter
+    criteria:
+      - id: flutter.design.layering
+        title: Layering
+        description: >-
+          Presentation, domain and data code sit in separate layers; widgets do not call data
+          sources directly and domain code imports no Flutter widgets.
+        category: architecture
+        severity: medium
+      - id: flutter.design.state
+        title: State ownership
+        description: >-
+          State has one owner, rebuilds are scoped to the widgets that read it, and no global
+          mutable singleton hides lifecycle bugs.
+        category: architecture
+        severity: medium
+      - id: flutter.design.accessibility
+        title: Accessibility
+        description: >-
+          Interactive elements expose semantics labels, meet touch-target and contrast minimums,
+          and remain usable with large text and screen readers.
+        category: accessibility
+        severity: medium
+      - id: flutter.design.error-handling
+        title: Error handling
+        description: >-
+          Futures and streams have error paths, failures reach the user with context, and no
+          error is swallowed in an empty catch.
+        category: error-handling
+        severity: medium
+    inputs:
+      - id: roots
+        name: Audit roots
+        description: Directories inside the run roots to audit.
+        kind: path
+        required: true
+      - id: focus
+        name: Focus symbol
+        description: Optional symbol path that narrows the investigation.
+        kind: symbol
+        required: false
+    dynamic:
+      plan_schema_version: 2
+      stages: [seed, plan, validate, execute, verify, gap_close, consolidate]
+      max_gap_iterations: 3
+      evidence_required: true
+      cross_check: true
+    tooling:
+      - id: flutter
+        purpose: Flutter SDK used for Dart analysis.
+        verified: true
+        source: "https://docs.flutter.dev/get-started/install"
+        platforms:
+          macos:
+            detect: flutter
+            install:
+              kind: homebrew
+              package: flutter
+          linux:
+            detect: flutter
+
+  - id: flutter-dependencies-audit
+    name: Flutter dependencies audit
+    rationale: >-
+      Review a Flutter application's package supply chain with the calling agent: maintenance,
+      licensing, pinning and publisher trust.
+    mode: agent-led
+    profile: flutter
+    criteria:
+      - id: flutter.dependencies.maintenance
+        title: Package maintenance
+        description: >-
+          Dependencies are maintained, have recent releases and no open security advisory that
+          applies to the pinned version.
+        category: supply-chain
+        severity: high
+      - id: flutter.dependencies.licenses
+        title: Licence compatibility
+        description: >-
+          Every dependency's licence is compatible with the product's distribution terms; no
+          copyleft package is shipped without a recorded decision.
+        category: licensing
+        severity: medium
+      - id: flutter.dependencies.pinning
+        title: Pinning and lockfile
+        description: >-
+          pubspec.lock is committed, versions are constrained deliberately, and no git or path
+          dependency points at an unpinned revision.
+        category: supply-chain
+        severity: medium
+      - id: flutter.dependencies.supply-chain
+        title: Publisher trust
+        description: >-
+          Packages come from verified publishers, package names are not typosquats, and no
+          dependency pulls code at build time from an untrusted source.
+        category: supply-chain
+        severity: high
+    inputs:
+      - id: roots
+        name: Audit roots
+        description: Directories inside the run roots to audit.
+        kind: path
+        required: true
+      - id: focus
+        name: Focus symbol
+        description: Optional symbol path that narrows the investigation.
+        kind: symbol
+        required: false
+    dynamic:
+      plan_schema_version: 2
+      stages: [seed, plan, validate, execute, verify, gap_close, consolidate]
+      max_gap_iterations: 3
+      evidence_required: true
+      cross_check: true
+    tooling:
+      - id: flutter
+        purpose: Flutter SDK used for Dart analysis.
+        verified: true
+        source: "https://docs.flutter.dev/get-started/install"
+        platforms:
+          macos:
+            detect: flutter
+            install:
+              kind: homebrew
+              package: flutter
+          linux:
+            detect: flutter
