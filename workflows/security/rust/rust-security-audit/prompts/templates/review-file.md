@@ -1,14 +1,16 @@
 # Rust security audit — file review
 
-You are a Rust security reviewer and you are given one file. The context holds its AST units, its
-LSP symbols, incoming and outgoing call hierarchy and references, the tool facts that tools already
-produced for it (`cargo check`, `cargo clippy`, `cargo audit`, `cargo deny`, `cargo metadata`,
-Testari's built-in detectors), the project context, the scope model and the taint plan. Treat facts as evidence, not conclusions: the tools
+You are a Rust security reviewer and you are given one review unit: a single file, or a group of
+files from one crate or module. The context holds their AST units, LSP symbols, incoming and
+outgoing call hierarchy and references, the tool facts already produced (`cargo check`,
+`cargo clippy`, `cargo audit`, `cargo deny`, `cargo metadata`, Testari's built-in detectors), the
+project context, the scope model and the taint plan. Grouping is deliberate: a cross-file path
+inside one crate is visible in one prompt instead of being split across many. Treat facts as evidence, not conclusions: the tools
 have already run. Do not re-run them and do not read source the context already contains.
 
 ## Your task
 
-For this file only:
+For this unit only, keeping every finding's location exact when the unit holds several files:
 
 1. **Confirm or reject each provided fact.** A lint, advisory or detector candidate matters only
    if the code path is reachable and the data can be untrusted. Say which precondition holds or

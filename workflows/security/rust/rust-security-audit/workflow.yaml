@@ -83,6 +83,7 @@ steps:
     depends_on: [build-truth, taint-plan]
     template: prompts/templates/review-file.md
     foreach: files.reviewable
+    group_by: crate
     context: [ast, lsp, tool-facts, project_context, scope, taint-plan]
     produces: [file-review]
 
@@ -91,6 +92,7 @@ steps:
     depends_on: [build-truth]
     template: prompts/templates/review-facts.md
     foreach: facts.groups
+    group_by: tool
     context: [lsp, group-facts, related-units, project_context, build-truth]
     produces: [fact-judgements]
 
@@ -99,6 +101,7 @@ steps:
     depends_on: [build-truth]
     template: prompts/templates/unsafe-cluster.md
     foreach: units.unsafe
+    group_by: crate
     context: [ast, lsp, related-units, project_context, build-truth]
     produces: [unsafe-reviews]
 
@@ -107,6 +110,7 @@ steps:
     depends_on: [taint-plan, build-truth]
     template: prompts/templates/sink-review.md
     foreach: units.sinks
+    group_by: class
     context: [ast, lsp, related-units, tool-facts, project_context, scope, taint-plan]
     produces: [taint-reviews]
 

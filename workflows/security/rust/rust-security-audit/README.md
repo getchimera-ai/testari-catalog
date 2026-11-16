@@ -20,9 +20,10 @@ configuration lets through. It reports only defects with exact evidence.
 4. **Taint plan** — from the scope and the build, decides which source-to-sink classes actually
    exist here: command execution, SQL, filesystem and path handling, network clients, unsafe
    pointers, FFI, URL and template construction, authorization decisions.
-5. **Per-file review** — one review per file, with AST units, LSP symbols and references, tool
-   facts, project context, the scope model and the taint plan. Facts are confirmed or refuted
-   against reachability; contextual defects the tools cannot see are added.
+5. **Unit review** — one review per crate or module, with AST units, LSP symbols and references,
+   tool facts, project context, the scope model and the taint plan. Grouping is deliberate: a
+   cross-file path inside a crate is visible in one prompt, and a workspace becomes tens of review
+   prompts instead of hundreds.
 6. **Fact triage** — one review per fact group, with reachability established through symbol
    references and severity adjusted to this workspace.
 7. **Unsafe audit** — one review per unsafe cluster: the invariant it relies on, every operation
@@ -78,6 +79,13 @@ from names: advisories, lints and sinks are judged by whether workspace code can
 them.
 
 Everything runs locally. No upload, no account, no telemetry.
+
+## How the work is handed out
+
+The audit never starts agents and never assumes a concurrency level. It declares units of work; the
+engine hands them out as claimable batches sized to what the client says it can take. Reviews are
+grouped by crate or module, so a large workspace is a few dozen prompts rather than one per file —
+better analysis across file boundaries and a fraction of the load.
 
 ## Scope
 
