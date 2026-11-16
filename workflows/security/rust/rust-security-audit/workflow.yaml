@@ -53,6 +53,9 @@ tools:
 # advertise a capability the product does not have.
 variables:
   - { id: roots, kind: path, required: true }
+  # Optional: a person may supply the threat model; the scope prompt renders it
+  # only when it was supplied.
+  - { id: threat_model, kind: text, required: false }
 
 # No prompt or instance caps: fan-out follows coverage. Resource protection is
 # the running engine's policy, and an early stop is reported as a coverage gap.

@@ -4,7 +4,15 @@ You are leading a Rust security audit. Before any file is reviewed, establish wh
 workspace exposes and who can reach it.
 
 You receive: project context (manifests, lockfile, CI configuration, README), and the package,
-target and dependency facts from `cargo metadata`. Derive the threat model from that evidence.
+target and dependency facts from `cargo metadata`.
+
+{{#if threat_model}}
+The person supplied this threat model; treat it as authoritative input:
+
+{{threat_model}}
+
+{{/if}}
+If no threat model was supplied, derive it from that evidence.
 
 ## Your task
 
