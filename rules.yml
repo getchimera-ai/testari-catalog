@@ -1,0 +1,89 @@
+# Detector rules the builtin tools run.
+#
+# A folder-tree catalog has no manifest, so these rules live here: without them
+# the `rust-detectors` tool runs over an empty rule set and reports nothing.
+# Each rule names a detector compiled into Testari.
+  - id: rust.command-injection
+    title: Command injection through a process launcher
+    description: >-
+      A command is built from input and passed to a shell or process launcher without
+      separating the executable from untrusted arguments.
+    category: command-injection
+    cwe: [CWE-78]
+    default_severity: critical
+    detector:
+      kind: builtin
+      id: rust-command-injection
+    remediation: >-
+      Pass arguments directly to std::process::Command; never build a shell string from
+      untrusted input. Allowlist the executable and validate every argument.
+    help_uri: "https://cwe.mitre.org/data/definitions/78.html"
+    languages: [rust]
+
+  - id: rust.hardcoded-secret
+    title: Hard-coded credential
+    description: >-
+      A password, token, private key or other credential is embedded in source code or a
+      committed configuration file.
+    category: secrets
+    cwe: [CWE-798]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: rust-hardcoded-secret
+    remediation: >-
+      Load secrets from the environment or a secret manager at runtime. Rotate any credential
+      that was committed and remove it from history.
+    help_uri: "https://cwe.mitre.org/data/definitions/798.html"
+    languages: [rust]
+
+  - id: rust.sql-injection
+    title: SQL injection through dynamically built query text
+    description: >-
+      Untrusted input is formatted or concatenated into a SQL statement instead of being bound
+      as a query parameter.
+    category: sql-injection
+    cwe: [CWE-89]
+    default_severity: critical
+    detector:
+      kind: builtin
+      id: rust-sql-from-input
+    remediation: >-
+      Use parameterized queries or prepared statements. Never concatenate untrusted input into
+      SQL text; validate and bind values instead.
+    help_uri: "https://cwe.mitre.org/data/definitions/89.html"
+    languages: [rust]
+
+  - id: rust.unsafe-block
+    title: Unsafe block or function
+    description: >-
+      An unsafe block or unsafe function bypasses Rust's memory-safety guarantees. Every unsafe
+      operation must uphold a documented invariant and be isolated behind a safe API.
+    category: memory-safety
+    cwe: [CWE-119]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: rust-unsafe-block
+    remediation: >-
+      Prefer safe alternatives. If unsafe is unavoidable, document the safety invariant,
+      encapsulate it behind a safe API, and add tests that exercise the invariant.
+    help_uri: "https://cwe.mitre.org/data/definitions/119.html"
+    languages: [rust]
+
+  - id: rust.weak-crypto
+    title: Weak or broken cryptography
+    description: >-
+      A security decision uses a broken or deprecated primitive, such as MD5, SHA-1, DES or RC4,
+      or uses a strong primitive with insufficient key material.
+    category: cryptography
+    cwe: [CWE-327, CWE-328]
+    default_severity: high
+    detector:
+      kind: builtin
+      id: rust-weak-crypto
+    remediation: >-
+      Use a current primitive from a maintained crate, for example SHA-256 or
+      ChaCha20-Poly1305. Do not use MD5, SHA-1, DES or RC4 for security decisions.
+    help_uri: "https://cwe.mitre.org/data/definitions/327.html"
+    languages: [rust]
