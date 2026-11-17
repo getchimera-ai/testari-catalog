@@ -33,9 +33,10 @@ not run tools; every claim must already exist in the inputs.
 ## What consolidation merges
 
 The finding ledger already holds every observation the earlier steps reported. Merge those
-observations with the tool facts, rank them, and explain each; do not re-derive a defect from a
-prose answer alone. A defect that was only described in a step answer, never reported as an
-observation, is not in the ledger and must be reported now or listed as a gap.
+observations with the fact judgements and the supply-chain review, rank them, and explain each; do
+not re-derive a defect from a prose answer alone. A defect that was only described in a step
+answer, never reported as an observation, is not in the ledger and must be reported now or listed
+as a gap.
 
 ## Delivering the answer
 

@@ -84,7 +84,9 @@ steps:
     kind: analyze
     depends_on: [build-truth]
     prompt: prompts/fixed/03-supply-chain.md
-    context: [tool-facts, group-facts, project_context, scope, build-truth]
+    # Reachability is judged from the references rust-analyzer resolved, so the
+    # chapter binds the same LSP and related-unit material its prompt promises.
+    context: [lsp, related-units, tool-facts, group-facts, project_context, scope, build-truth]
     produces: [supply-chain]
 
   - id: taint-plan
@@ -134,7 +136,9 @@ steps:
     kind: analyze
     depends_on: [build-truth]
     prompt: prompts/fixed/05-config-secrets.md
-    context: [tool-facts, project_context, build-truth]
+    # The prompt opens with the configuration-file discovery, so the chapter binds
+    # the discovery view as well as the facts and the build truth.
+    context: [discovered-source, tool-facts, project_context, build-truth]
     produces: [config-review]
 
   - id: crypto-auth
@@ -148,7 +152,7 @@ steps:
     kind: consolidate
     depends_on: [review-files, review-facts, unsafe-audit, sink-review, config-secrets, crypto-auth, supply-chain]
     prompt: prompts/fixed/06-consolidate.md
-    context: [file-review, fact-judgements, unsafe-reviews, taint-reviews, config-review, crypto-auth-review, supply-chain, scope, run-coverage]
+    context: [file-review, fact-judgements, unsafe-reviews, taint-reviews, config-review, crypto-auth-review, supply-chain, scope, build-truth, taint-plan, run-coverage]
     produces: [findings, coverage, gaps]
 
   - id: verify
