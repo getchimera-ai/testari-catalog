@@ -135,6 +135,30 @@ tools:
     parse: cargo-deny-json
     facts: [licence, ban, source, advisory]
 
+  - id: cargo-geiger
+    kind: external
+    purpose: Unsafe-code metrics per crate, including the dependency tree
+    verified: false
+    source: "https://github.com/rust-secure-code/cargo-geiger"
+    platforms:
+      macos:
+        detect: { executable: cargo-geiger }
+        install: [{ kind: cargo, package: cargo-geiger }]
+      linux:
+        detect: { executable: cargo-geiger }
+        install: [{ kind: cargo, package: cargo-geiger }]
+      windows:
+        detect: { executable: cargo-geiger.exe }
+        install: [{ kind: cargo, package: cargo-geiger }]
+    run:
+      # cargo-geiger refuses a virtual manifest, so the host runs it once per
+      # workspace package and substitutes `{{package}}`.
+      argv: ["cargo", "geiger", "--output-format", "Json", "-p", "{{package}}"]
+      timeout_seconds: 600
+      per_package: true
+    parse: cargo-geiger-json
+    facts: [detector-candidate]
+
   - id: gitleaks
     kind: external
     purpose: Deterministic offline secret scan across sources, configuration and CI; runs with redaction so no secret value reaches a report
