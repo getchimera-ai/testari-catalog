@@ -217,7 +217,7 @@ tools:
 
   - id: rust-analyzer
     kind: lsp
-    purpose: Symbols, incoming and outgoing call hierarchy, references and diagnostics — the reachability substrate every prompt receives
+    purpose: Symbols and the incoming and outgoing references rust-analyzer resolves — the reachability substrate every prompt receives
     verified: true
     source: "https://rust-analyzer.github.io/"
     platforms:
