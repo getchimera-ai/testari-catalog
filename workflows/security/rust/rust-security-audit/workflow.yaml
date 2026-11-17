@@ -45,7 +45,7 @@ preprocessors:
 # tool's recipe and its per-OS detection and install instructions, including the
 # Linux package managers (apt, dnf, yum, zypper, apk, pacman) and cargo/pipx.
 tools:
-  [cargo-metadata, cargo-check, cargo-clippy, cargo-audit, cargo-deny, cargo-geiger,
+  [cargo-metadata, cargo-check, cargo-clippy, cargo-audit, cargo-deny,
    gitleaks, semgrep, rust-detectors, rust-analyzer]
 
 # Only `roots` is reachable today: the engine accepts roots at start and

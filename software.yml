@@ -127,32 +127,13 @@ tools:
         install: [{ kind: cargo, package: cargo-deny }]
     run:
       # cargo-deny 0.19.8 takes the output format as a global option before the
-      # subcommand; `cargo deny check --format json` is rejected.
+      # subcommand; `cargo deny check --format json` is rejected. It also writes
+      # the JSON report to stderr, so the recipe names the stream to capture.
       argv: ["cargo", "deny", "--format", "json", "check"]
       timeout_seconds: 300
+      capture: stderr
     parse: cargo-deny-json
     facts: [licence, ban, source, advisory]
-
-  - id: cargo-geiger
-    kind: external
-    purpose: Unsafe-code metrics per crate and dependency, including unsafe in the dependency tree
-    verified: false
-    source: "https://github.com/rust-secure-code/cargo-geiger"
-    platforms:
-      macos:
-        detect: { executable: cargo-geiger }
-        install: [{ kind: cargo, package: cargo-geiger }]
-      linux:
-        detect: { executable: cargo-geiger }
-        install: [{ kind: cargo, package: cargo-geiger }]
-      windows:
-        detect: { executable: cargo-geiger.exe }
-        install: [{ kind: cargo, package: cargo-geiger }]
-    run:
-      argv: ["cargo", "geiger", "--output-format", "Json"]
-      timeout_seconds: 600
-    parse: cargo-geiger-json
-    facts: [detector-candidate]
 
   - id: gitleaks
     kind: external
