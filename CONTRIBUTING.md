@@ -5,24 +5,21 @@ language, framework or domain. A contribution is one audit entry: what it inspec
 review criteria, the languages it needs and its tools for macOS, Windows and Linux. There is no
 application code in this repository.
 
-## Propose from Testari
+## Propose with Testari
 
-You do not need git.
+An agent connected to Testari's local MCP server can propose an audit with `catalog_propose`. The
+proposal appears in **Testari → Catalog → Drafts** with its rationale, review criteria, required
+tools and any overlap with existing audits. Agents cannot change the catalog themselves; you take
+the proposal into a pull request.
 
-Open **Testari → Catalog → Talk to Testari** and say what you want audited. It is a voice
-conversation: you speak, Testari answers, researches the domain and proposes the audit. It knows
-the catalog and the audits that already exist and splits a broad request into the right separate
-audits. Agents connected to Testari propose the same way through its local MCP server.
-
-Every proposal appears in **Testari → Catalog → Drafts** with its rationale, review criteria,
-required tools and any overlap with existing audits. Review it, press **Apply** (Testari validates
-it with its own loader and commits it on your catalog branch), then **Publish** to open the pull
-request. You review and publish; a maintainer merges. Agents cannot change the catalog themselves.
+The voice authoring surface ("Talk to Testari") is not part of this build, and this repository is
+organised as workflow folders, which the app's catalog editor does not apply or publish yet — so
+everything below is the working path for a change here.
 
 ## Contribute with a pull request
 
-You can also add or improve an audit entry directly and open a pull request. One audit or one
-focused change per pull request.
+Add or improve an audit entry directly and open a pull request. One audit or one focused change per
+pull request.
 
 ## Suggesting before building
 

@@ -38,26 +38,22 @@ A custom remote can be set in Testari → Catalog → Settings; it is synced the
 No account, no upload and no telemetry: the catalog is fetched with your own git credentials and
 validated locally.
 
-## Contribute with Testari
+## Contribute
 
-You do not need git.
+An agent connected to Testari's local MCP server can write an audit proposal with
+`catalog_propose`. The proposal appears in **Testari → Catalog → Drafts** with its rationale,
+review criteria, required tools and any overlap with existing audits; you review it and take it
+into a pull request. Agents never change the catalog themselves.
 
-1. Open **Testari → Catalog → Talk to Testari** and say what you want audited. It is a voice
-   conversation: you speak, Testari answers, researches the topic and proposes the audit. It knows
-   the catalog and the audits that already exist and splits a broad request into the right separate
-   audits. Agents connected to Testari propose the same way through its local MCP server.
-2. Every proposal appears in **Testari → Catalog → Drafts**, with its rationale, review criteria,
-   required tools and any overlap with existing audits. Similar proposals are grouped so you can
-   merge them into one audit or keep them separate.
-3. Review the draft and press **Apply**. Testari validates the catalog with its own loader and
-   commits the change on your own catalog branch; **Publish** then opens the pull request for you.
-
-You review, apply and publish; the maintainers merge. Agents never change the catalog themselves.
+This repository is organised as workflow folders, and this build's catalog editor writes a single
+`catalog.yaml`: drafting, applying and publishing a workflow-folder catalog from the app are not
+supported yet, and the voice authoring surface ("Talk to Testari") is not part of this build. So a
+change to an audit here is a pull request — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Issues and pull requests are equally welcome in this repository. An audit is one self-contained
 entry: its checks or review criteria, the languages it needs and its tools for macOS, Windows and
 Linux. Applied audits are never removed; a retired audit is marked deprecated so older runs keep
-their history. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+their history.
 
 ## Licence
 
