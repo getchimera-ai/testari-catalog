@@ -153,7 +153,9 @@ tools:
     run:
       # cargo-geiger refuses a virtual manifest, so the host runs it once per
       # workspace package and substitutes `{{package}}`.
-      argv: ["cargo", "geiger", "--output-format", "Json", "-p", "{{package}}"]
+      # geiger insists on a package *manifest*; `-p` against the workspace root
+      # still reports the virtual manifest and fails.
+      argv: ["cargo", "geiger", "--output-format", "Json", "--manifest-path", "{{package_manifest}}"]
       timeout_seconds: 600
       per_package: true
     parse: cargo-geiger-json
