@@ -41,7 +41,9 @@ configuration lets through. It reports only defects with exact evidence.
     server-side identity rather than a caller-supplied id.
 11. **Consolidation and verification** — duplicates merged by fingerprint, provenance kept, findings
     ranked by impact and reachability, coverage reported by crate, target, feature set, unsafe
-    cluster and sink class, gaps closed within the declared bound.
+    cluster and sink class. Verification re-checks every finding's span, quote and fingerprint
+    against the source as it is, and refuses a finding whose cited text has changed. Coverage that
+    could not be reviewed is reported as a gap with its exact key; it is never silently closed.
 
 ## What counts as a finding
 

@@ -154,7 +154,7 @@ steps:
   - id: verify
     kind: verify
     depends_on: [consolidate]
-    description: Check every finding's evidence span, quote and fingerprint; close gaps within bounds.
+    description: Re-check every finding's evidence span, quote and fingerprint against the source as it is now; a finding whose cited text changed is refused until it is corrected.
 
 evidence:
   required: true
